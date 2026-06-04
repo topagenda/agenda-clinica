@@ -38,7 +38,7 @@ function abrirImagemDia(src) {
 // GOOGLE DRIVE
 // ══════════════════════════════════════════════════════
 
-const GOOGLE_CLIENT_ID  = '235501323072-0eq60qvktqbsalrp1htt3uqkf26fkq5s.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID  = '963450621180-0b5mhn4iu8uv7hmlva3a8f7p01n9snkj.apps.googleusercontent.com';
 const SCOPES            = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_NAME   = 'backup_sistema.json';
 const DRIVE_POLL_MS     = 30000; // verifica atualizações a cada 30s
@@ -67,11 +67,33 @@ function conectarGoogleDriveMobile() {
 
     S.googleToken = token;
     lsSet('agenda_google_token', token);
-    // Guarda quando expira (token dura 1h)
     lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
     history.replaceState(null, '', window.location.pathname);
     console.log('[Drive] Token OAuth recebido.');
-    setTimeout(() => baixarBackupDrive().then(() => iniciarPollingDrive()), 500);
+
+    // Abre o card de login automaticamente após voltar do Google
+    setTimeout(() => {
+        if (typeof mostrarCardLogin === 'function') {
+            mostrarCardLogin();
+        } else {
+            const splash  = document.getElementById('login-splash');
+            const card    = document.getElementById('login-card-wrap');
+            const overlay = document.getElementById('login-overlay');
+            const bg      = document.getElementById('login-bg');
+            if (splash)  splash.style.display = 'none';
+            if (overlay) overlay.style.pointerEvents = 'none';
+            if (bg)      bg.style.pointerEvents = 'none';
+            if (card)    card.style.display = 'flex';
+        }
+        // Foca o input oculto do PIN para ativar teclado
+        setTimeout(() => {
+            const inp = document.getElementById('pin-input-hidden');
+            if (inp) inp.focus();
+        }, 400);
+    }, 300);
+
+    // Sincroniza dados em segundo plano
+    setTimeout(() => baixarBackupDrive(true).then(() => iniciarPollingDrive()), 1000);
 })();
 
 // Verifica se o token ainda é válido
@@ -105,7 +127,7 @@ async function baixarBackupDrive(silencioso = false) {
 
         const result = await search.json();
         if (!result.files || result.files.length === 0) {
-            if (!silencioso) toast('☁️ Drive conectado! Nenhum backup encontrado ainda.');
+            if (!silencioso) { toast('☁️ Drive conectado! Nenhum backup encontrado ainda.'); setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300); }
             return false;
         }
 
@@ -151,11 +173,12 @@ async function baixarBackupDrive(silencioso = false) {
         } else {
             toast('✅ Dados sincronizados do Google Drive!');
             irTela('tela-login');
+            setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300);
         }
         return true;
     } catch(e) {
         console.error('[Drive] Erro ao baixar backup:', e);
-        if (!silencioso) { toast('☁️ Drive conectado!'); irTela('tela-login'); }
+        if (!silencioso) { toast('☁️ Drive conectado!'); irTela('tela-login'); setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300); }
         return false;
     }
 }
@@ -455,6 +478,45 @@ function irTela(id) {
 
     clearInterval(window._pollingAgenda);
     pararPollingDrive();
+
+    if (id === 'tela-login') {
+        // Abre o card de PIN automaticamente sempre que ir para login
+        setTimeout(() => {
+            if (typeof window.mostrarCardLogin === 'function') {
+                window.mostrarCardLogin();
+            } else {
+                const splash  = document.getElementById('login-splash');
+                const card    = document.getElementById('login-card-wrap');
+                const overlay = document.getElementById('login-overlay');
+                const bg      = document.getElementById('login-bg');
+                if (splash)  splash.style.display = 'none';
+                if (overlay) overlay.style.pointerEvents = 'none';
+                if (bg)      bg.style.pointerEvents = 'none';
+                if (card)    card.style.display = 'flex';
+            }
+            // Foca o input oculto do PIN para ativar teclado no celular
+            setTimeout(() => {
+                const inp = document.getElementById('pin-input-hidden');
+                if (inp) inp.focus();
+            }, 300);
+        }, 100);
+
+        // Atualiza botão do Drive conforme status do token
+        const btnDrive = document.querySelector('.btn-google');
+        if (btnDrive) {
+            if (tokenValido()) {
+                btnDrive.innerHTML = '<i class="fa-brands fa-google"></i> Google Drive sincronizado ✓';
+                btnDrive.style.background = '#e8f5e9';
+                btnDrive.style.color = '#2e7d32';
+                btnDrive.style.border = '1.5px solid #a5d6a7';
+            } else {
+                btnDrive.innerHTML = '<i class="fa-brands fa-google"></i> Sincronizar via Google Drive';
+                btnDrive.style.background = '';
+                btnDrive.style.color = '';
+                btnDrive.style.border = '';
+            }
+        }
+    }
 
     if (id === 'tela-agenda') {
         // Polling leve: re-renderiza se localStorage mudar (ex: outra aba)
