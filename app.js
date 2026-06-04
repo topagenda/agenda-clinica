@@ -38,7 +38,7 @@ function abrirImagemDia(src) {
 // GOOGLE DRIVE
 // ══════════════════════════════════════════════════════
 
-const GOOGLE_CLIENT_ID  = '963450621180-0b5mhn4iu8uv7hmlva3a8f7p01n9snkj.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID  = '235501323072-0eq60qvktqbsalrp1htt3uqkf26fkq5s.apps.googleusercontent.com';
 const SCOPES            = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_NAME   = 'backup_sistema.json';
 const DRIVE_POLL_MS     = 30000; // verifica atualizações a cada 30s
