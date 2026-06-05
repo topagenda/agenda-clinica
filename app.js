@@ -58,48 +58,69 @@ function conectarGoogleDriveMobile() {
 }
 
 // Captura token OAuth que volta na URL após login Google
-(function verificarTokenOAuth() {
-    const hash = window.location.hash;
-    if (!hash) return;
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const token  = params.get('access_token');
-    if (!token) return;
-
-    S.googleToken = token;
-    lsSet('agenda_google_token', token);
-    lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
-    history.replaceState(null, '', window.location.pathname);
-    console.log('[Drive] Token OAuth recebido.');
-
-    // Abre o card de login automaticamente após voltar do Google
-    setTimeout(() => {
-        if (typeof mostrarCardLogin === 'function') {
-            mostrarCardLogin();
-        } else {
-            const splash  = document.getElementById('login-splash');
-            const card    = document.getElementById('login-card-wrap');
-            const overlay = document.getElementById('login-overlay');
-            const bg      = document.getElementById('login-bg');
-            if (splash)  splash.style.display = 'none';
-            if (overlay) overlay.style.pointerEvents = 'none';
-            if (bg)      bg.style.pointerEvents = 'none';
-            if (card)    card.style.display = 'flex';
-        }
-        // Foca o input oculto do PIN para ativar teclado
-        setTimeout(() => {
-            const inp = document.getElementById('pin-input-hidden');
-            if (inp) inp.focus();
-        }, 400);
-    }, 300);
-
-    // Sincroniza dados em segundo plano
-    setTimeout(() => baixarBackupDrive(true).then(() => iniciarPollingDrive()), 1000);
-})();
+// verificarTokenOAuth é chamado dentro do DOMContentLoaded
 
 // Verifica se o token ainda é válido
 function tokenValido() {
     const exp = lsGet('agenda_google_token_exp', 0);
     return S.googleToken && Date.now() < exp;
+}
+
+// Renovação silenciosa do token via iframe (antes de expirar)
+let _renovacaoTimer = null;
+function agendarRenovacaoToken() {
+    if (_renovacaoTimer) clearTimeout(_renovacaoTimer);
+    const exp = lsGet('agenda_google_token_exp', 0);
+    const agora = Date.now();
+    const tempoRestante = exp - agora;
+    // Renova 5 minutos antes de expirar
+    const renovarEm = Math.max(tempoRestante - 5 * 60 * 1000, 10000);
+    console.log('[Drive] Renovação do token agendada em', Math.round(renovarEm/60000), 'min');
+    _renovacaoTimer = setTimeout(() => renovarTokenSilencioso(), renovarEm);
+}
+
+function renovarTokenSilencioso() {
+    console.log('[Drive] Renovando token silenciosamente...');
+    // Remove iframe anterior se existir
+    const anterior = document.getElementById('oauth-renewal-frame');
+    if (anterior) anterior.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'oauth-renewal-frame';
+    iframe.style.display = 'none';
+
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const url = `https://accounts.google.com/o/oauth2/v2/auth`
+        + `?client_id=${GOOGLE_CLIENT_ID}`
+        + `&redirect_uri=${redirectUri}`
+        + `&response_type=token`
+        + `&scope=${encodeURIComponent(SCOPES)}`
+        + `&prompt=none`;  // sem interação do usuário
+
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    // Captura o token do iframe quando carregar
+    iframe.onload = () => {
+        try {
+            const hash = iframe.contentWindow.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.replace('#', ''));
+                const token = params.get('access_token');
+                if (token) {
+                    S.googleToken = token;
+                    lsSet('agenda_google_token', token);
+                    lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
+                    console.log('[Drive] Token renovado com sucesso!');
+                    agendarRenovacaoToken(); // agenda próxima renovação
+                }
+            }
+        } catch(e) {
+            // CORS impede leitura — token expirou, usuário precisará reconectar
+            console.warn('[Drive] Renovação silenciosa falhou, usuário precisará reconectar.');
+        }
+        setTimeout(() => iframe.remove(), 2000);
+    };
 }
 
 // Baixa o backup do Drive e atualiza o estado local
@@ -127,7 +148,7 @@ async function baixarBackupDrive(silencioso = false) {
 
         const result = await search.json();
         if (!result.files || result.files.length === 0) {
-            if (!silencioso) { toast('☁️ Drive conectado! Nenhum backup encontrado ainda.'); setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300); }
+            if (!silencioso) toast('☁️ Drive conectado! Nenhum backup encontrado ainda.');
             return false;
         }
 
@@ -162,10 +183,12 @@ async function baixarBackupDrive(silencioso = false) {
             for (const p of pacs) await idbPut('pacientes', p);
         } catch(e) {}
 
+        // Sempre atualiza S.pacientes e S.agendamentos na memória após download
+        S.pacientes    = lsGet('agenda_pacientes',    []);
+        S.agendamentos = lsGet('agenda_agendamentos', []);
+
         if (silencioso) {
             const antesAgs = JSON.stringify(S.agendamentos);
-            S.pacientes    = lsGet('agenda_pacientes',    []);
-            S.agendamentos = lsGet('agenda_agendamentos', []);
             if (JSON.stringify(S.agendamentos) !== antesAgs) {
                 renderizarAgenda();
                 toast('🔄 Agenda atualizada do Drive!');
@@ -173,12 +196,11 @@ async function baixarBackupDrive(silencioso = false) {
         } else {
             toast('✅ Dados sincronizados do Google Drive!');
             irTela('tela-login');
-            setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300);
         }
         return true;
     } catch(e) {
         console.error('[Drive] Erro ao baixar backup:', e);
-        if (!silencioso) { toast('☁️ Drive conectado!'); irTela('tela-login'); setTimeout(() => { if(typeof mostrarCardLogin==='function') mostrarCardLogin(); }, 300); }
+        if (!silencioso) { toast('☁️ Drive conectado!'); irTela('tela-login'); }
         return false;
     }
 }
@@ -480,7 +502,7 @@ function irTela(id) {
     pararPollingDrive();
 
     if (id === 'tela-login') {
-        // Abre o card de PIN automaticamente sempre que ir para login
+        // Mostra card de login automaticamente (ex: após sincronização Drive)
         setTimeout(() => {
             if (typeof window.mostrarCardLogin === 'function') {
                 window.mostrarCardLogin();
@@ -494,14 +516,9 @@ function irTela(id) {
                 if (bg)      bg.style.pointerEvents = 'none';
                 if (card)    card.style.display = 'flex';
             }
-            // Foca o input oculto do PIN para ativar teclado no celular
-            setTimeout(() => {
-                const inp = document.getElementById('pin-input-hidden');
-                if (inp) inp.focus();
-            }, 300);
         }, 100);
 
-        // Atualiza botão do Drive conforme status do token
+        // Atualiza botão do Drive
         const btnDrive = document.querySelector('.btn-google');
         if (btnDrive) {
             if (tokenValido()) {
@@ -516,6 +533,10 @@ function irTela(id) {
                 btnDrive.style.border = '';
             }
         }
+
+        // Reseta PIN para nova entrada
+        S.pin = '';
+        atualizarPinDisplay();
     }
 
     if (id === 'tela-agenda') {
@@ -808,11 +829,18 @@ async function abrirModalGerarLink() {
     const obsEl = $('ml-obs');
     if (obsEl) obsEl.value = '';
 
-    // Recarrega pacientes do localStorage/Drive antes de popular o dropdown
-    await carregarPacientes_ls();
-
     const sel = $('ml-paciente');
     if (!sel) return;
+
+    // ✅ CORREÇÃO: garante que S.pacientes está carregado antes de popular o select
+    if (!S.pacientes || S.pacientes.length === 0) {
+        await carregarPacientes_ls();
+    }
+    // Se ainda vazio, tenta baixar do Drive
+    if (!S.pacientes || S.pacientes.length === 0) {
+        await baixarBackupDrive(true);
+    }
+
     sel.innerHTML = '<option value="">— Selecione —</option>';
     [...S.pacientes].sort((a,b) => (a.nome||'').localeCompare(b.nome||'')).forEach(p => {
         const opt = document.createElement('option');
@@ -1481,10 +1509,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedFileId = lsGet('agenda_drive_file_id', null);
     if (savedFileId) S.fileIdDrive = savedFileId;
 
+    // Verifica se voltou do OAuth com token na URL
+    const hash = window.location.hash;
+    if (hash) {
+        const hashParams = new URLSearchParams(hash.replace('#', ''));
+        const oauthToken = hashParams.get('access_token');
+        if (oauthToken) {
+            S.googleToken = oauthToken;
+            lsSet('agenda_google_token', oauthToken);
+            lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
+            history.replaceState(null, '', window.location.pathname);
+            console.log('[Drive] Token OAuth recebido.');
+            agendarRenovacaoToken();
+            irTela('tela-login');
+            verificarInstalacaoPWA();
+            setTimeout(() => baixarBackupDrive().then(() => iniciarPollingDrive()), 500);
+            return;
+        }
+    }
+
     const params = new URLSearchParams(location.search);
     if (params.get('t')) {
         await iniciarTelaPaciente();
     } else {
+        // Se já tem token válido, carrega dados locais imediatamente
+        // e depois sincroniza com o Drive em background
+        if (tokenValido()) {
+            agendarRenovacaoToken();
+            // Carrega do localStorage antes de mostrar o PIN
+            // para garantir que S.pacientes já está populado quando o usuário entrar
+            await carregarPacientes_ls();
+            await carregarAgendamentos_ls();
+            // Sincroniza com Drive em background (não bloqueia a tela de PIN)
+            baixarBackupDrive(true).then(() => {
+                // Após o download, garante que S.pacientes está atualizado
+                carregarPacientes_ls();
+            }).catch(() => {});
+            iniciarPollingDrive();
+        }
         irTela('tela-login');
         verificarInstalacaoPWA();
     }
