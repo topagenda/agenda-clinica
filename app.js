@@ -183,9 +183,11 @@ async function baixarBackupDrive(silencioso = false) {
             for (const p of pacs) await idbPut('pacientes', p);
         } catch(e) {}
 
-        // Sempre atualiza S.pacientes e S.agendamentos na memória após download
+        // Sempre atualiza S.pacientes, S.agendamentos e S.config na memória após download
         S.pacientes    = lsGet('agenda_pacientes',    []);
         S.agendamentos = lsGet('agenda_agendamentos', []);
+        // ✅ CORREÇÃO: atualiza S.config na memória para que o PIN do Drive seja reconhecido
+        if (banco.config) S.config = { ...S.config, ...banco.config };
 
         if (silencioso) {
             const antesAgs = JSON.stringify(S.agendamentos);
