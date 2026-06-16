@@ -255,48 +255,25 @@ async function baixarBackupDrive(silencioso = false) {
             { headers: { Authorization: `Bearer ${S.googleToken}` } }
         );
         const banco = await fileRes.json();
-
-        // Suporta dois formatos:
-        // - Formato NOVO (desktop ≥ v2): agenda_agendamentos + agenda_tokens (sem pacientes)
-        // - Formato LEGADO (PWA salva): agendamentos + pacientes + tokens
-        const agendamentos = banco.agenda_agendamentos || banco.agendamentos || [];
-        const tokensObj    = banco.agenda_tokens       || banco.tokens       || {};
-        const config       = banco.config || null;
-
-        // Pacientes: o desktop novo não exporta mais a lista completa por segurança.
-        // Reconstruímos a partir dos tokens (cada token tem pacienteId + nomePaciente).
-        // Se o arquivo ainda tiver banco.pacientes (formato legado), usamos ele.
-        let pacientes = Array.isArray(banco.pacientes) ? banco.pacientes : [];
-        if (!pacientes.length && tokensObj && typeof tokensObj === 'object') {
-            // Extrai pacientes únicos dos tokens (nome + id para mostrar na agenda)
-            const mapa = {};
-            Object.values(tokensObj).forEach(tk => {
-                if (tk.pacienteId && tk.nomePaciente && !mapa[tk.pacienteId]) {
-                    mapa[tk.pacienteId] = { id: tk.pacienteId, nome: tk.nomePaciente, telefone: '' };
-                }
-            });
-            pacientes = Object.values(mapa);
-        }
-
-        console.log('[Drive] Conteúdo baixado — pacientes:', pacientes.length, '| agendamentos:', agendamentos.length, '| tokens:', Object.keys(tokensObj).length);
+        console.log('[Drive] Conteúdo baixado — pacientes:', banco.pacientes?.length, '| agendamentos:', banco.agendamentos?.length);
 
         // Atualiza localStorage e IndexedDB com os dados do Drive
-        if (agendamentos.length || Array.isArray(banco.agenda_agendamentos))
-            lsSet('agenda_agendamentos', agendamentos);
-        if (pacientes.length || Array.isArray(banco.pacientes))
-            lsSet('agenda_pacientes', pacientes);
-        if (tokensObj && Object.keys(tokensObj).length)
-            lsSet('agenda_tokens', tokensObj);
-        if (config)
-            lsSet('agenda_config', config);
+        // Condição: array de pacientes deve existir (mesmo que vazio, substituímos)
+        if (Array.isArray(banco.pacientes))    lsSet('agenda_pacientes',    banco.pacientes);
+        if (Array.isArray(banco.agendamentos)) lsSet('agenda_agendamentos', banco.agendamentos);
+        if (banco.tokens)                      lsSet('agenda_tokens',       banco.tokens);
+        if (banco.config)                      lsSet('agenda_config',       banco.config);
 
         // Atualiza IndexedDB para uso offline
         try {
-            for (const ag of agendamentos) await idbPut('agendamentos', ag);
-            for (const p  of pacientes)    await idbPut('pacientes', p);
+            const ags = banco.agendamentos || [];
+            for (const ag of ags) await idbPut('agendamentos', ag);
+            const pacs = banco.pacientes || [];
+            for (const p of pacs) await idbPut('pacientes', p);
         } catch(e) {}
 
         // Sempre atualiza S.pacientes e S.agendamentos na memória após download
+        // ✅ CORREÇÃO: sempre atualiza memória após download do Drive
         S.pacientes    = lsGet('agenda_pacientes',    []);
         S.agendamentos = lsGet('agenda_agendamentos', []);
 
@@ -334,15 +311,12 @@ async function salvarAlteracoesNoDrive() {
     }
 
     const payload = {
-        // Formato novo (compatível com desktop): agenda_agendamentos + agenda_tokens
-        agenda_agendamentos: S.agendamentos || [],
-        agenda_tokens:       lsGet('agenda_tokens', {}),
-        // Campos legados para retrocompatibilidade
-        agendamentos:        S.agendamentos || [],
-        tokens:              lsGet('agenda_tokens', {}),
-        config:              S.config,
-        _origem:             'celular',
-        _salvoEm:            new Date().toISOString()
+        pacientes:    S.pacientes    || [],
+        agendamentos: S.agendamentos || [],
+        tokens:       lsGet('agenda_tokens', {}),
+        config:       S.config,
+        _origem:      'celular',
+        _salvoEm:     new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 
@@ -1309,11 +1283,6 @@ function salvarConfig() {
     S.config.nome_clinica = ($('cfg-nome-clinica')?.value || '').trim() || 'Agenda Clínica';
     S.config.tel_medico   = ($('cfg-tel')?.value || '').trim();
     S.telMedico = S.config.tel_medico;
-    // Preserva o e-mail do responsável (usado na licença e no backup)
-    const emailInput = $('cfg-email');
-    if (emailInput && emailInput.value.trim()) {
-        S.config.email_responsavel = emailInput.value.trim().toLowerCase();
-    }
     salvarConfig_ls();
     if ($('menu-clinica-nome')) $('menu-clinica-nome').textContent = S.config.nome_clinica;
     toast('Configurações salvas!');
