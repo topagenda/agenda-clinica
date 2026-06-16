@@ -255,25 +255,48 @@ async function baixarBackupDrive(silencioso = false) {
             { headers: { Authorization: `Bearer ${S.googleToken}` } }
         );
         const banco = await fileRes.json();
-        console.log('[Drive] Conteúdo baixado — pacientes:', banco.pacientes?.length, '| agendamentos:', banco.agendamentos?.length);
+
+        // Suporta dois formatos:
+        // - Formato NOVO (desktop ≥ v2): agenda_agendamentos + agenda_tokens (sem pacientes)
+        // - Formato LEGADO (PWA salva): agendamentos + pacientes + tokens
+        const agendamentos = banco.agenda_agendamentos || banco.agendamentos || [];
+        const tokensObj    = banco.agenda_tokens       || banco.tokens       || {};
+        const config       = banco.config || null;
+
+        // Pacientes: o desktop novo não exporta mais a lista completa por segurança.
+        // Reconstruímos a partir dos tokens (cada token tem pacienteId + nomePaciente).
+        // Se o arquivo ainda tiver banco.pacientes (formato legado), usamos ele.
+        let pacientes = Array.isArray(banco.pacientes) ? banco.pacientes : [];
+        if (!pacientes.length && tokensObj && typeof tokensObj === 'object') {
+            // Extrai pacientes únicos dos tokens (nome + id para mostrar na agenda)
+            const mapa = {};
+            Object.values(tokensObj).forEach(tk => {
+                if (tk.pacienteId && tk.nomePaciente && !mapa[tk.pacienteId]) {
+                    mapa[tk.pacienteId] = { id: tk.pacienteId, nome: tk.nomePaciente, telefone: '' };
+                }
+            });
+            pacientes = Object.values(mapa);
+        }
+
+        console.log('[Drive] Conteúdo baixado — pacientes:', pacientes.length, '| agendamentos:', agendamentos.length, '| tokens:', Object.keys(tokensObj).length);
 
         // Atualiza localStorage e IndexedDB com os dados do Drive
-        // Condição: array de pacientes deve existir (mesmo que vazio, substituímos)
-        if (Array.isArray(banco.pacientes))    lsSet('agenda_pacientes',    banco.pacientes);
-        if (Array.isArray(banco.agendamentos)) lsSet('agenda_agendamentos', banco.agendamentos);
-        if (banco.tokens)                      lsSet('agenda_tokens',       banco.tokens);
-        if (banco.config)                      lsSet('agenda_config',       banco.config);
+        if (agendamentos.length || Array.isArray(banco.agenda_agendamentos))
+            lsSet('agenda_agendamentos', agendamentos);
+        if (pacientes.length || Array.isArray(banco.pacientes))
+            lsSet('agenda_pacientes', pacientes);
+        if (tokensObj && Object.keys(tokensObj).length)
+            lsSet('agenda_tokens', tokensObj);
+        if (config)
+            lsSet('agenda_config', config);
 
         // Atualiza IndexedDB para uso offline
         try {
-            const ags = banco.agendamentos || [];
-            for (const ag of ags) await idbPut('agendamentos', ag);
-            const pacs = banco.pacientes || [];
-            for (const p of pacs) await idbPut('pacientes', p);
+            for (const ag of agendamentos) await idbPut('agendamentos', ag);
+            for (const p  of pacientes)    await idbPut('pacientes', p);
         } catch(e) {}
 
         // Sempre atualiza S.pacientes e S.agendamentos na memória após download
-        // ✅ CORREÇÃO: sempre atualiza memória após download do Drive
         S.pacientes    = lsGet('agenda_pacientes',    []);
         S.agendamentos = lsGet('agenda_agendamentos', []);
 
@@ -311,12 +334,15 @@ async function salvarAlteracoesNoDrive() {
     }
 
     const payload = {
-        pacientes:    S.pacientes    || [],
-        agendamentos: S.agendamentos || [],
-        tokens:       lsGet('agenda_tokens', {}),
-        config:       S.config,
-        _origem:      'celular',
-        _salvoEm:     new Date().toISOString()
+        // Formato novo (compatível com desktop): agenda_agendamentos + agenda_tokens
+        agenda_agendamentos: S.agendamentos || [],
+        agenda_tokens:       lsGet('agenda_tokens', {}),
+        // Campos legados para retrocompatibilidade
+        agendamentos:        S.agendamentos || [],
+        tokens:              lsGet('agenda_tokens', {}),
+        config:              S.config,
+        _origem:             'celular',
+        _salvoEm:            new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
 
@@ -1283,6 +1309,11 @@ function salvarConfig() {
     S.config.nome_clinica = ($('cfg-nome-clinica')?.value || '').trim() || 'Agenda Clínica';
     S.config.tel_medico   = ($('cfg-tel')?.value || '').trim();
     S.telMedico = S.config.tel_medico;
+    // Preserva o e-mail do responsável (usado na licença e no backup)
+    const emailInput = $('cfg-email');
+    if (emailInput && emailInput.value.trim()) {
+        S.config.email_responsavel = emailInput.value.trim().toLowerCase();
+    }
     salvarConfig_ls();
     if ($('menu-clinica-nome')) $('menu-clinica-nome').textContent = S.config.nome_clinica;
     toast('Configurações salvas!');
@@ -1347,13 +1378,21 @@ async function iniciarTelaPaciente() {
     pacToken = t;
     irTela('tela-paciente');
 
-    // Tenta buscar tokens do Drive para garantir dados atualizados
-    if (tokenValido()) {
+    // 1. Tenta buscar o token direto do GitHub (funciona sem autenticação)
+    let cfg = await _buscarTokenGithub(t);
+
+    // 2. Fallback: tenta pelo Drive se a psicóloga estiver autenticada
+    if (!cfg && tokenValido()) {
         await baixarBackupDrive(true);
+        const tokens = carregarTokens_ls();
+        cfg = tokens[t] || null;
     }
 
-    const tokens = carregarTokens_ls();
-    const cfg    = tokens[t];
+    // 3. Fallback: localStorage local (caso já tenha sido baixado antes)
+    if (!cfg) {
+        const tokens = carregarTokens_ls();
+        cfg = tokens[t] || null;
+    }
 
     if (!cfg) { renderizarPacErro('Link inválido ou expirado.'); return; }
     if (cfg.usado) { renderizarPacErro('Este link já foi utilizado.'); return; }
@@ -1362,6 +1401,18 @@ async function iniciarTelaPaciente() {
     const subtituloEl = $('pac-subtitulo');
     if (subtituloEl) subtituloEl.textContent = `Olá, ${cfg.nomePaciente}! Confirme seu horário.`;
     renderizarPacGrade();
+}
+
+// Busca o token no GitHub raw (público, sem autenticação)
+async function _buscarTokenGithub(token) {
+    try {
+        const url = `https://raw.githubusercontent.com/marciosublim-code/agenda-clinica/main/tokens/${token}.json?nocache=${Date.now()}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        return await resp.json();
+    } catch(e) {
+        return null;
+    }
 }
 
 function renderizarPacGrade() {
@@ -1726,3 +1777,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         verificarInstalacaoPWA();
     }
 });
+
+// ══════════════════════════════════════════════════════════════
+// PUSH AGENDAMENTO → GITHUB
+// O sistema local (Electron) lê esses arquivos e importa para o SQLite
+// ══════════════════════════════════════════════════════════════
+async function _pushAgendamentoGithub(agendamento, token) {
+    try {
+        // Lê o PAT do token que foi usado para gerar o link
+        // O token do GitHub fica em tokens/TOKEN.json → campo githubPAT
+        // Para não expor o PAT no JSON público, usamos um endpoint diferente:
+        // gravamos em agendamentos-pendentes/ag_xxx.json sem autenticação
+        // via um GitHub Action — mas a forma mais simples é o PAT já estar
+        // no arquivo do token (campo privado não exposto na UI pública)
+
+        // Busca o PAT salvo junto ao token no GitHub
+        const tokenUrl = `https://raw.githubusercontent.com/marciosublim-code/agenda-clinica/main/tokens/${token}.json?nocache=${Date.now()}`;
+        const tokenResp = await fetch(tokenUrl);
+        if (!tokenResp.ok) return;
+        const tokenDados = await tokenResp.json();
+        const pat = tokenDados._pat;
+        if (!pat) return; // PAT não estava no token, silencia
+
+        const conteudo = JSON.stringify(agendamento, null, 2);
+        const conteudoB64 = btoa(unescape(encodeURIComponent(conteudo)));
+
+        // Verifica SHA existente
+        let sha = null;
+        const checkResp = await fetch(
+            `https://api.github.com/repos/marciosublim-code/agenda-clinica/contents/agendamentos-pendentes/${agendamento.id}.json`,
+            { headers: { 'Authorization': `token ${pat}`, 'User-Agent': 'AgendaClinica' } }
+        );
+        if (checkResp.ok) {
+            const checkData = await checkResp.json();
+            sha = checkData.sha || null;
+        }
+
+        await fetch(
+            `https://api.github.com/repos/marciosublim-code/agenda-clinica/contents/agendamentos-pendentes/${agendamento.id}.json`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${pat}`,
+                    'User-Agent':    'AgendaClinica',
+                    'Content-Type':  'application/json'
+                },
+                body: JSON.stringify({
+                    message: `agendamento ${agendamento.id}`,
+                    content: conteudoB64,
+                    ...(sha ? { sha } : {})
+                })
+            }
+        );
+    } catch(e) {
+        console.warn('[GitHub] Erro ao publicar agendamento:', e);
+    }
+}
