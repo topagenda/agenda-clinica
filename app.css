@@ -1,1855 +1,1874 @@
-// ── Lightbox para imagens do Pequeno Príncipe ────────────────
-function abrirImagemDia(src) {
-    const existing = document.getElementById('pp-lightbox');
-    if (existing) existing.remove();
-    const lb = document.createElement('div');
-    lb.id = 'pp-lightbox';
-    lb.style.cssText = `
-        position:fixed;inset:0;z-index:9999;
-        background:rgba(61,37,53,0.85);
-        display:flex;align-items:center;justify-content:center;
-        backdrop-filter:blur(8px);
-        animation:fadeInLb .2s ease-out;
-        cursor:zoom-out;
-    `;
-    lb.onclick = () => lb.remove();
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.cssText = `
-        max-width:90vw;max-height:90vh;
-        border-radius:16px;
-        box-shadow:0 16px 60px rgba(0,0,0,0.5);
-        object-fit:contain;
-        animation:zoomInLb .25s ease-out;
-    `;
-    lb.appendChild(img);
-    document.body.appendChild(lb);
+/* ============================================================
+   APP.CSS — Agenda Clínica
+   Tema: Rosa · Pequeno Príncipe · Margaridas
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Nunito:wght@300;400;500;600;700&display=swap');
+
+/* ── Variáveis ────────────────────────────────────────────── */
+:root {
+  --rose:        #e87fa0;
+  --rose-light:  #f5b8cc;
+  --rose-dark:   #cc5577;
+  --rose-pale:   #fdf0f5;
+  --gold:        #d4a853;
+  --gold-light:  #f5e6c0;
+  --sky:         #b8d4f0;
+  --sky-light:   #e8f3fd;
+  --green:       #7db87a;
+  --green-light: #d4ecd3;
+  --cream:       #faf7f2;
+  --text1:       #3d2840;
+  --text2:       #9a7080;
+  --text3:       #b8909e;
+  --border:      #f2d8e4;
+  --white:       #ffffff;
+  --danger:      #e05a6b;
+  --success:     #5a9e6b;
+  --shadow:      rgba(200, 100, 130, 0.12);
+  --shadow-md:   rgba(200, 100, 130, 0.2);
+}
+
+/* ── TEMA AZUL ────────────────────────────────────────────── */
+html[data-tema="azul"],
+:root[data-tema="azul"],
+[data-tema="azul"] {
+  --rose:        #4a90d9;
+  --rose-light:  #90bce8;
+  --rose-dark:   #2563ab;
+  --rose-pale:   #eff6ff;
+  --gold:        #d4a853;
+  --gold-light:  #f5e6c0;
+  --sky:         #bfdbfe;
+  --sky-light:   #eff6ff;
+  --green:       #7db87a;
+  --green-light: #d4ecd3;
+  --cream:       #f0f7ff;
+  --text1:       #1e3a5f;
+  --text2:       #4a7aaa;
+  --text3:       #7aaad0;
+  --border:      #bfdbfe;
+  --white:       #ffffff;
+  --danger:      #e05a6b;
+  --success:     #5a9e6b;
+  --shadow:      rgba(37, 99, 171, 0.12);
+  --shadow-md:   rgba(37, 99, 171, 0.2);
+}
+
+/* ── TEMA VERDE ───────────────────────────────────────────── */
+html[data-tema="verde"],
+:root[data-tema="verde"],
+[data-tema="verde"] {
+  --rose:        #34a96b;
+  --rose-light:  #80ccaa;
+  --rose-dark:   #1e8050;
+  --rose-pale:   #f0faf4;
+  --gold:        #d4a853;
+  --gold-light:  #f5e6c0;
+  --sky:         #b6e4c8;
+  --sky-light:   #f0faf4;
+  --green:       #34a96b;
+  --green-light: #d4f4e2;
+  --cream:       #f0faf4;
+  --text1:       #1a3d2b;
+  --text2:       #4a8a65;
+  --text3:       #7abf99;
+  --border:      #b6e4c8;
+  --white:       #ffffff;
+  --danger:      #e05a6b;
+  --success:     #5a9e6b;
+  --shadow:      rgba(34, 160, 90, 0.12);
+  --shadow-md:   rgba(34, 160, 90, 0.2);
+}
+
+[data-tema="verde"] body::before,
+body[data-tema="verde"]::before {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(34,160,90,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(30,128,80,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(182,228,200,0.04) 0%, transparent 60%);
+}
+
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  color: var(--text1);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Padrão de fundo sutil — pétalas */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(232,120,154,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(212,168,83,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(184,212,240,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-tema="azul"] body::before,
+body[data-tema="azul"]::before {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(59,130,246,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(37,99,171,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(147,197,253,0.04) 0%, transparent 60%);
+}
+
+/* ── Telas ────────────────────────────────────────────────── */
+.tela {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--cream);
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* ── LOGIN ────────────────────────────────────────────────── */
+#tela-login {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: var(--cream);
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Imagem de fundo — slideshow do Pequeno Príncipe */
+.login-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #f5c0d0;
+  background-image: linear-gradient(160deg, #fce8f0 0%, #f5b8cc 50%, #cc7799 100%);
+  transition: background-image 1.5s ease-in-out;
+  z-index: 0;
+}
+
+/* Overlay gradiente sobre a imagem */
+.login-bg-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(253,240,244,0.05) 0%,
+    rgba(232,127,160,0.15) 50%,
+    rgba(61,37,53,0.55) 100%
+  );
+  z-index: 1;
+}
+
+.login-wrap {
+  position: relative;
+  z-index: 10;
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: 360px;
+  padding: 1.5rem;
+  padding-top: 3rem;
+  padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 100vh;
+}
+
+.login-logo {
+  text-align: center;
+}
+
+.logo-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.6rem;
+  color: white;
+  box-shadow: 0 8px 24px var(--shadow-md);
+  position: relative;
+}
+
+/* Margarida decorativa no ícone */
+.logo-icon::after {
+  content: '✿';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: .9rem;
+  color: var(--gold);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+}
+
+.login-logo h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: white;
+  letter-spacing: .01em;
+  text-shadow: 0 2px 12px rgba(61,37,53,0.5);
+}
+
+.login-logo p {
+  font-size: .85rem;
+  color: rgba(255,255,255,0.85);
+  font-style: italic;
+  margin-top: .2rem;
+  text-shadow: 0 1px 6px rgba(61,37,53,0.4);
+}
+
+.pin-tap-hint {
+  text-align: center;
+  font-size: .78rem;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: .5rem;
+  cursor: pointer;
+  transition: color .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+}
+.pin-tap-hint:hover { color: var(--rose); }
+.pin-tap-hint.oculto { display: none; }
+
+.login-card {
+  width: 100%;
+  background: rgba(255,255,255,0.88);
+  border-radius: 20px;
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: 0 8px 32px rgba(61,37,53,0.25), 0 1px 0 var(--border);
+  border: 1px solid rgba(255,255,255,0.6);
+  backdrop-filter: blur(12px);
+}
+
+.field-label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: .75rem;
+}
+
+.pin-row {
+  display: flex;
+  justify-content: center;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+.pin-row span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--rose-light);
+  transition: all .2s;
+}
+
+.pin-row span.filled {
+  background: var(--rose);
+  border-color: var(--rose);
+  box-shadow: 0 0 8px rgba(232,120,154,0.4);
+  transform: scale(1.1);
+}
+
+.pin-row.error span { border-color: var(--danger); animation: shake .4s; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.login-group { margin-bottom: 1rem; }
+
+.login-group label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: .4rem;
+}
+
+.login-group input {
+  width: 100%;
+  padding: .65rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .95rem;
+  color: var(--text1);
+  background: var(--rose-pale);
+  outline: none;
+  transition: border-color .2s;
+}
+
+.login-group input:focus { border-color: var(--rose); }
+
+/* Numpad */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .4rem;
+  margin-top: .75rem;
+}
+
+.numpad button {
+  padding: .55rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.85);
+  font-family: 'Nunito', sans-serif;
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text1);
+  cursor: pointer;
+  transition: all .15s;
+  backdrop-filter: blur(4px);
+}
+
+.numpad button:active { transform: scale(.95); background: var(--rose-pale); }
+.numpad button:hover  { border-color: var(--rose-light); background: var(--rose-pale); }
+
+.numpad .btn-clear { color: var(--text3); }
+.numpad .btn-ok {
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+.numpad .btn-ok:hover { opacity: .9; }
+
+.login-erro {
+  color: var(--danger);
+  font-size: .8rem;
+  text-align: center;
+  margin-top: .75rem;
+}
+
+.btn-pri {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .75rem 1.25rem;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  box-shadow: 0 4px 14px var(--shadow-md);
+}
+
+.btn-pri:hover { opacity: .9; transform: translateY(-1px); }
+.btn-pri:active { transform: translateY(0); }
+
+.btn-sec {
+  padding: .7rem 1.2rem;
+  background: var(--rose-pale);
+  color: var(--rose-dark);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.btn-sec:hover { background: var(--border); }
+
+/* ── HEADER ───────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px var(--shadow);
+  position: relative;
+  z-index: 10;
+}
+
+/* Linha decorativa rosa no topo do header */
+.app-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--rose-light), var(--rose), var(--gold), var(--rose-light));
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: .95rem;
+  font-weight: 500;
+  color: var(--text1);
+  font-style: italic;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--rose-pale);
+  border-radius: 10px;
+  color: var(--rose-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  transition: all .15s;
+}
+
+.icon-btn:hover { background: var(--border); }
+
+.btn-novo {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .9rem;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px var(--shadow-md);
+  transition: all .15s;
+}
+
+.btn-novo:hover { opacity: .9; }
+
+/* ── NAVEGAÇÃO SEMANA ─────────────────────────────────────── */
+.semana-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 1rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.semana-nav button {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--rose-pale);
+  color: var(--rose-dark);
+  cursor: pointer;
+  font-size: .8rem;
+  transition: all .15s;
+}
+
+.semana-nav button:hover { background: var(--border); }
+
+.semana-nav span {
+  font-family: 'Playfair Display', serif;
+  font-size: .85rem;
+  color: var(--text2);
+  font-style: italic;
+}
+
+/* ── GRADE AGENDA ─────────────────────────────────────────── */
+.agenda-wrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.grade-agenda {
+  display: grid;
+  grid-template-columns: 44px repeat(7, 1fr);
+  min-width: 520px;
+}
+
+.ga-hora-header, .ga-dia-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+  padding: .4rem .2rem;
+  text-align: center;
+}
+
+.ga-hora-header { background: var(--cream); }
+
+.ga-dia-header {
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.ga-dia-header:hover { background: var(--rose-pale); }
+
+.ga-dia-header.hoje {
+  background: linear-gradient(180deg, var(--rose-pale), var(--white));
+}
+
+.ga-dia-header.hoje .ga-dia-num {
+  background: var(--rose);
+  color: white;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px var(--shadow-md);
+}
+
+.ga-dia-header.selecionado { background: var(--rose-pale); }
+
+.ga-dia-nome {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.ga-dia-num {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text1);
+  margin-top: .1rem;
+}
+
+.ga-hora-label {
+  font-size: .65rem;
+  color: var(--text3);
+  text-align: right;
+  padding: .3rem .35rem 0 0;
+  height: 42px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.ga-celula {
+  height: 42px;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  position: relative;
+  padding: 2px;
+}
+
+.ga-celula.livre:hover { background: var(--rose-pale); }
+
+.ga-celula.agendado { background: linear-gradient(135deg, rgba(232,120,154,0.08), rgba(245,184,204,0.06)); }
+
+.ga-chip {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+.ga-chip.confirmado {
+  background: #fadadd;
+  color: #b0526a;
+  border: 1px solid #f4aabb;
+  box-shadow: 0 1px 4px rgba(200,100,130,0.10);
+}
+
+.ga-chip.pendente, .ga-chip.aguardando {
+  background: var(--gold-light);
+  color: #8a6030;
+  border: 1px solid var(--gold);
+}
+
+/* ── LISTA DO DIA ─────────────────────────────────────────── */
+.dia-lista-wrap {
+  background: var(--white);
+  border-top: 2px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.dia-lista-header {
+  padding: .7rem 1rem .4rem;
+  font-family: 'Playfair Display', serif;
+  font-size: .9rem;
+  font-style: italic;
+  color: var(--rose-dark);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  background: var(--rose-pale);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.dia-lista-header::before { content: '✿'; color: var(--rose-light); }
+
+.ag-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+}
+
+.ag-item:hover { background: var(--rose-pale); }
+
+.ag-hora {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--rose-dark);
+  min-width: 38px;
+  font-family: 'Nunito', sans-serif;
+}
+
+.ag-nome {
+  flex: 1;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text1);
+}
+
+.ag-cod { font-size: .7rem; color: var(--text3); }
+
+.ag-badge {
+  font-size: .65rem;
+  font-weight: 700;
+  padding: .2rem .5rem;
+  border-radius: 20px;
+  letter-spacing: .03em;
+}
+
+.ag-badge.confirmado {
+  background: #fadadd;
+  color: #b0526a;
+  border: 1px solid #f4aabb;
+}
+
+.ag-badge.pendente, .ag-badge.aguardando {
+  background: var(--gold-light);
+  color: #7a5020;
+  border: 1px solid var(--gold);
+}
+
+.lista-vazio {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text3);
+  font-size: .85rem;
+  font-style: italic;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+}
+
+.lista-vazio::before { content: '✿'; font-size: 1.5rem; color: var(--rose-light); }
+
+/* ── FAB ──────────────────────────────────────────────────── */
+.fab-fixos {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border: none;
+  box-shadow: 0 4px 16px var(--shadow-md);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .2s;
+  z-index: 20;
+}
+
+.fab-fixos:hover { transform: scale(1.1) rotate(20deg); }
+
+/* ── MENU ─────────────────────────────────────────────────── */
+.tela-menu {
+  background: var(--white) !important;
+  overflow-y: auto;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.25rem 1rem;
+  background: linear-gradient(135deg, var(--rose-pale), var(--white));
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-icon.sm {
+  width: 44px;
+  height: 44px;
+  font-size: 1rem;
+}
+
+.menu-clinica {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rose-dark);
+}
+
+.menu-sub {
+  font-size: .75rem;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem .75rem;
+  gap: .4rem;
+}
+
+.menu-nav button {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .9rem 1rem;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text1);
+  font-family: 'Nunito', sans-serif;
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: left;
+}
+
+.menu-nav button i {
+  width: 20px;
+  color: var(--rose);
+  font-size: .9rem;
+}
+
+.menu-nav button:hover { background: var(--rose-pale); color: var(--rose-dark); }
+
+.btn-logout { color: var(--danger) !important; }
+.btn-logout i { color: var(--danger) !important; }
+
+/* Citação do Pequeno Príncipe no menu */
+.menu-nav::after {
+  content: '"O essencial é invisível aos olhos." — Pequeno Príncipe';
+  display: block;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: .8rem;
+  color: var(--text3);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}
+
+/* ── CONFIGURAÇÕES ────────────────────────────────────────── */
+.config-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-section {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.config-section h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: .95rem;
+  font-style: italic;
+  color: var(--rose-dark);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.config-section h3::before { content: '✿'; color: var(--rose-light); }
+
+.field-group { margin-bottom: .85rem; }
+.field-group:last-child { margin-bottom: 0; }
+
+.field-group label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: .35rem;
+}
+
+.field-group input,
+.field-group select {
+  width: 100%;
+  padding: .65rem .9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .9rem;
+  color: var(--text1);
+  background: var(--rose-pale);
+  outline: none;
+  transition: border-color .2s;
+  appearance: none;
+}
+
+.field-group input:focus,
+.field-group select:focus { border-color: var(--rose); background: var(--white); }
+
+.btn-salvar-cfg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .85rem;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--shadow-md);
+  transition: all .2s;
+}
+
+.btn-salvar-cfg:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ── TELA PACIENTE (link público) ─────────────────────────── */
+#tela-paciente {
+  display: none;
+  background: linear-gradient(160deg, #fdf0f4 0%, #faf7f2 50%, #f0f7fd 100%);
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.pac-outer {
+  width: 100%;
+  max-width: 480px;
+}
+
+.pac-card {
+  background: var(--white);
+  border-radius: 24px;
+  box-shadow: 0 8px 40px var(--shadow), 0 1px 0 var(--border);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.pac-header {
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  padding: 2rem 1.5rem 1.5rem;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decoração margaridas no header do paciente */
+.pac-header::before {
+  content: '✿ ❀ ✿ ❀ ✿ ❀ ✿';
+  position: absolute;
+  bottom: -8px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: .4rem;
+}
+
+.pac-logo {
+  width: 56px;
+  height: 56px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.3rem;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.pac-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: .3rem;
+}
+
+.pac-header p {
+  font-size: .85rem;
+  opacity: .85;
+  font-style: italic;
+}
+
+#pac-corpo { padding: 1.25rem; }
+
+/* Slots de horário */
+.pac-grade-wrap { overflow-x: auto; }
+.pac-grade { display: flex; gap: .6rem; min-width: max-content; }
+
+.pac-col { display: flex; flex-direction: column; gap: .3rem; min-width: 52px; }
+
+.pac-col-header {
+  text-align: center;
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text3);
+  letter-spacing: .05em;
+  padding: .3rem 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: .2rem;
+}
+
+.pac-col-header.hoje { color: var(--rose-dark); border-color: var(--rose); }
+
+.pac-slot {
+  padding: .4rem .3rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  font-family: 'Nunito', sans-serif;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--text1);
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+
+.pac-slot.disponivel:hover {
+  background: var(--rose-pale);
+  border-color: var(--rose);
+  color: var(--rose-dark);
+}
+
+.pac-slot.selecionado {
+  background: var(--rose) !important;
+  border-color: var(--rose-dark) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px var(--shadow-md);
+}
+
+.pac-slot.bloqueado {
+  background: #fafafa;
+  color: #ccc;
+  border-color: #eee;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.pac-slot.ocupado {
+  background: #fafafa;
+  color: #ccc;
+  border-color: #eee;
+  cursor: not-allowed;
+}
+
+/* Confirmação paciente */
+.pac-confirmacao {
+  background: var(--rose-pale);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.pac-confirmacao h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: var(--rose-dark);
+  margin-bottom: .5rem;
+}
+
+.pac-confirm-slot {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .65rem 1rem;
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--text1);
+  margin: .75rem 0;
+}
+
+.pac-btns {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  margin-top: .75rem;
+}
+
+/* ── MODAIS ───────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(61,37,53,0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  padding: 0;
+}
+
+.modal-sheet {
+  background: var(--white);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 40px var(--shadow-md);
+  border-top: 3px solid var(--rose-light);
+  animation: slideUp .25s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: .75rem auto .25rem;
+  flex-shrink: 0;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 1.25rem .75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-head h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--rose-dark);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.modal-head h3 i { color: var(--rose); }
+
+.modal-head button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: var(--rose-pale);
+  border-radius: 8px;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: .85rem;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: .6rem;
+  justify-content: flex-end;
+  padding: .75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--rose-pale);
+  border-radius: 0 0 0 0;
+}
+
+/* Grade modal de horários */
+.modal-grade-wrap { overflow-x: auto; }
+.modal-grade-grid { display: flex; gap: .5rem; min-width: max-content; }
+
+.modal-grade-col { display: flex; flex-direction: column; gap: .25rem; }
+
+.modal-grade-col-header {
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-align: center;
+  letter-spacing: .04em;
+  padding: .2rem 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: .2rem;
+}
+
+.mg-slot {
+  padding: .3rem .25rem;
+  border-radius: 7px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .67rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  min-width: 48px;
+  text-align: center;
+  transition: all .1s;
+}
+
+.slot-neutro      { background: var(--white); color: var(--text2); }
+.slot-disponivel  { background: linear-gradient(135deg, var(--rose), var(--rose-dark)); color: white; border-color: transparent; box-shadow: 0 2px 6px var(--shadow); }
+.slot-indisponivel{ background: #fee2e6; color: var(--danger); border-color: var(--danger); }
+.slot-ocupado     { background: #f5f5f5; color: #ccc; cursor: not-allowed; border-color: #eee; }
+
+/* Info paciente no modal */
+.pac-mini-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .9rem;
+  background: var(--rose-pale);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: .8rem;
+}
+
+.pac-codigo {
+  background: var(--rose);
+  color: white;
+  padding: .15rem .45rem;
+  border-radius: 6px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.pac-info-nome { font-weight: 600; color: var(--text1); }
+.pac-info-tel  { color: var(--text2); font-size: .75rem; }
+
+/* Link resultado */
+.link-resultado-box {
+  background: var(--rose-pale);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.link-resultado-box label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.link-copy-row {
+  display: flex;
+  gap: .4rem;
+}
+
+.link-copy-row input {
+  flex: 1;
+  padding: .55rem .8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: .78rem;
+  font-family: monospace;
+  background: var(--white);
+  color: var(--rose-dark);
+  outline: none;
+}
+
+.link-copy-row button {
+  padding: .55rem .8rem;
+  background: var(--rose);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: .85rem;
+}
+
+.btn-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .65rem;
+  background: #25d366;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: .85rem;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(37,211,102,.3);
+}
+
+.btn-whatsapp:hover { opacity: .9; }
+
+/* Pacientes lista */
+.lista-pac-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.busca-wrap {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .9rem;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  color: var(--text3);
+  font-size: .9rem;
+}
+
+.busca-wrap input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-family: 'Nunito', sans-serif;
+  font-size: .9rem;
+  color: var(--text1);
+  background: transparent;
+}
+
+.pac-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  background: var(--white);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 1px 4px var(--shadow);
+}
+
+.pac-item:hover { background: var(--rose-pale); border-color: var(--rose-light); }
+
+.pac-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose-light), var(--rose));
+  color: white;
+  font-weight: 700;
+  font-size: .95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pac-item-nome { font-weight: 600; font-size: .9rem; }
+
+.pac-codigo-tag {
+  background: var(--rose);
+  color: white;
+  padding: .1rem .4rem;
+  border-radius: 6px;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.pac-fixo-tag {
+  background: var(--gold-light);
+  color: #7a5020;
+  padding: .1rem .4rem;
+  border-radius: 6px;
+  font-size: .68rem;
+  font-weight: 600;
+  border: 1px solid var(--gold);
+}
+
+/* Toggle horário fixo */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--rose);
+}
+
+.fixo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+}
+
+/* Horário badge */
+.horario-badge {
+  background: var(--rose-pale);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .5rem .85rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--rose-dark);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* Detalhe modal */
+.detalhe-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .88rem;
+}
+
+.dr-label {
+  color: var(--text3);
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.dr-val { font-weight: 600; color: var(--text1); }
+
+/* Buttons danger/ghost */
+.btn-danger {
+  padding: .65rem 1.1rem;
+  background: #fee2e6;
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  transition: all .15s;
+}
+
+.btn-danger:hover { background: var(--danger); color: white; }
+
+.btn-ghost {
+  padding: .65rem 1.1rem;
+  background: transparent;
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  transition: all .15s;
+}
+
+.btn-ghost:hover { background: var(--rose-pale); color: var(--rose-dark); }
+
+/* Links fixos modal */
+.fixo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem;
+  background: var(--rose-pale);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: .5rem;
+}
+
+.fixo-item-nome  { font-weight: 600; font-size: .88rem; color: var(--text1); }
+.fixo-item-horario { font-size: .75rem; color: var(--text2); margin-top: .15rem; }
+
+.fixo-item-link {
+  padding: .45rem .8rem;
+  background: #25d366;
+  color: white;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--rose-dark);
+  color: white;
+  padding: .65rem 1.5rem;
+  border-radius: 24px;
+  font-size: .85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px var(--shadow-md);
+  z-index: 999;
+  white-space: nowrap;
+  animation: fadeInUp .25s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rose-light); border-radius: 4px; }
+
+/* Responsividade */
+@media (max-width: 400px) {
+  .grade-agenda { grid-template-columns: 36px repeat(7, 1fr); }
+  .ga-hora-label { font-size: .58rem; }
+}
+
+/* ── Botão Google ─────────────────────────────────────────── */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  width: 100%;
+  padding: .6rem 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: .5rem;
+  transition: all .15s;
+}
+.btn-google:hover { opacity: .9; }
+
+/* ── Imagem do dia na grade ───────────────────────────────── */
+.ga-dia-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  margin: .15rem auto 0;
+  display: block;
+  border: 1.5px solid var(--rose-light);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+.ga-dia-header.hoje .ga-dia-img {
+  border-color: var(--rose);
+  box-shadow: 0 2px 8px var(--shadow-md);
+}
+
+/* label-hint */
+.label-hint {
+  font-size: .7rem;
+  font-weight: 400;
+  color: var(--text3);
+  font-style: italic;
+  margin-left: .3rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Lightbox imagem Pequeno Príncipe ────────────────────── */
+@keyframes fadeInLb {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes zoomInLb {
+  from { opacity: 0; transform: scale(.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── PIN row clicável ─────────────────────────────────────── */
+.pin-row {
+  cursor: pointer;
+  transition: transform .15s;
+}
+.pin-row:hover { transform: scale(1.04); }
+
+/* ── TELA SPLASH (imagem cheia antes do login) ───────────── */
+.login-splash {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  z-index: 3;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 4rem;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity .4s, transform .4s;
+}
+
+.login-splash.saindo {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.splash-logo {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 1rem;
+  border: 2px solid rgba(255,255,255,0.4);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.splash-titulo {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+  margin-bottom: .4rem;
+}
+
+.splash-sub {
+  font-size: .9rem;
+  color: rgba(255,255,255,0.85);
+  font-style: italic;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+  margin-bottom: 1.5rem;
+}
+
+.splash-dots {
+  display: flex;
+  gap: .5rem;
+}
+
+.splash-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+.splash-dots span:nth-child(2) { animation-delay: .3s; }
+.splash-dots span:nth-child(3) { animation-delay: .6s; }
+
+@keyframes pulseDot {
+  0%,100% { opacity: .4; transform: scale(.8); }
+  50%      { opacity: 1;  transform: scale(1.2); }
+}
+
+/* Card animação de entrada */
+.login-wrap.entrando {
+  animation: slideUpCard .4s cubic-bezier(.2,.8,.3,1) both;
+}
+
+@keyframes slideUpCard {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Numpad sempre visível no card (splash foi removida) */
+.numpad {
+  display: grid !important;
 }
 
 /* ============================================================
-   APP.JS — Agenda Clínica PWA
-   Armazenamento: Google Drive (fonte principal) + IndexedDB (offline)
-   Tailscale/servidor local: REMOVIDO
+   CORREÇÕES MOBILE — telas pequenas (≤ 480px)
    ============================================================ */
 
-'use strict';
-
-// ══════════════════════════════════════════════════════
-// GOOGLE DRIVE
-// ══════════════════════════════════════════════════════
-
-const GOOGLE_CLIENT_ID  = '235501323072-0eq60qvktqbsalrp1htt3uqkf26fkq5s.apps.googleusercontent.com';
-// drive.file só enxerga arquivos criados pelo próprio app nesta sessão OAuth.
-// Se o backup foi criado em outro dispositivo/sessão, a busca retorna vazio.
-// Usando drive para ter acesso completo de leitura e escrita.
-const SCOPES            = 'https://www.googleapis.com/auth/drive';
-const DRIVE_FILE_NAME   = 'backup_sistema.json';
-const DRIVE_POLL_MS     = 30000; // verifica atualizações a cada 30s
-
-let _drivePollingTimer        = null;
-let _driveUltimaModificacao   = null;
-
-// Inicia o fluxo OAuth — redireciona para o Google
-function conectarGoogleDriveMobile() {
-    // Salva de onde veio para voltar ao lugar certo após OAuth
-    lsSet('agenda_oauth_origem', 'login');
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const url = `https://accounts.google.com/o/oauth2/v2/auth`
-        + `?client_id=${GOOGLE_CLIENT_ID}`
-        + `&redirect_uri=${redirectUri}`
-        + `&response_type=token`
-        + `&scope=${encodeURIComponent(SCOPES)}`;
-    window.location.href = url;
-}
-
-// Botão de atalho dentro da agenda
-function conectarDriveAgenda() {
-    if (tokenValido()) {
-        // Já conectado: mostra status
-        toast('✅ Google Drive já conectado!');
-        return;
-    }
-    // Salva que estava na agenda e estava logado
-    lsSet('agenda_oauth_origem', 'agenda');
-    lsSet('agenda_oauth_estava_logado', true);
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const url = `https://accounts.google.com/o/oauth2/v2/auth`
-        + `?client_id=${GOOGLE_CLIENT_ID}`
-        + `&redirect_uri=${redirectUri}`
-        + `&response_type=token`
-        + `&scope=${encodeURIComponent(SCOPES)}`;
-    window.location.href = url;
-}
-
-// Botão em Configurações: conecta ou desconecta
-function conectarOuDesconectarDrive() {
-    if (tokenValido()) {
-        if (!confirm('Desconectar o Google Drive?')) return;
-        S.googleToken = null;
-        S.fileIdDrive = null;
-        lsSet('agenda_google_token', null);
-        lsSet('agenda_google_token_exp', 0);
-        lsSet('agenda_drive_file_id', null);
-        atualizarStatusDrive();
-        toast('Google Drive desconectado.');
-        return;
-    }
-    lsSet('agenda_oauth_origem', 'config');
-    lsSet('agenda_oauth_estava_logado', true);
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const url = `https://accounts.google.com/o/oauth2/v2/auth`
-        + `?client_id=${GOOGLE_CLIENT_ID}`
-        + `&redirect_uri=${redirectUri}`
-        + `&response_type=token`
-        + `&scope=${encodeURIComponent(SCOPES)}`;
-    window.location.href = url;
-}
-
-// Atualiza visual dos botões de Drive em toda a interface
-function atualizarStatusDrive() {
-    const conectado = tokenValido();
-
-    // Botão no header da agenda
-    const btnAgenda = document.getElementById('btn-drive-agenda');
-    if (btnAgenda) {
-        btnAgenda.style.color = conectado ? '#34a853' : '';
-        btnAgenda.title = conectado ? 'Drive conectado ✓' : 'Conectar Google Drive';
-    }
-
-    // Botão em Configurações
-    const btnTexto = document.getElementById('btn-drive-texto');
-    const btnCfg   = document.getElementById('btn-drive-config');
-    if (btnTexto) btnTexto.textContent = conectado ? 'Drive conectado ✓ (toque para desconectar)' : 'Conectar com Google Drive';
-    if (btnCfg)   { btnCfg.style.background = conectado ? '#e8f5e9' : ''; btnCfg.style.color = conectado ? '#2e7d32' : ''; }
-
-    // Status text em Configurações
-    const statusEl = document.getElementById('status-drive');
-    if (statusEl) statusEl.textContent = conectado ? '✅ Sincronizado com Google Drive' : '';
-
-    // Botão na tela de login (compatibilidade)
-    const btnLogin = document.querySelector('.btn-google');
-    if (btnLogin) {
-        if (conectado) {
-            btnLogin.innerHTML = '<i class="fa-brands fa-google"></i> Google Drive sincronizado ✓';
-            btnLogin.style.background = '#e8f5e9';
-            btnLogin.style.color = '#2e7d32';
-        } else {
-            btnLogin.innerHTML = '<i class="fa-brands fa-google"></i> Sincronizar via Google Drive';
-            btnLogin.style.background = '';
-            btnLogin.style.color = '';
-        }
-    }
-}
-
-// Captura token OAuth que volta na URL após login Google
-// verificarTokenOAuth é chamado dentro do DOMContentLoaded
-
-// Verifica se o token ainda é válido
-function tokenValido() {
-    const exp = lsGet('agenda_google_token_exp', 0);
-    return S.googleToken && Date.now() < exp;
-}
-
-// Renovação silenciosa do token via iframe (antes de expirar)
-let _renovacaoTimer = null;
-function agendarRenovacaoToken() {
-    if (_renovacaoTimer) clearTimeout(_renovacaoTimer);
-    const exp = lsGet('agenda_google_token_exp', 0);
-    const agora = Date.now();
-    const tempoRestante = exp - agora;
-    // Renova 5 minutos antes de expirar
-    const renovarEm = Math.max(tempoRestante - 5 * 60 * 1000, 10000);
-    console.log('[Drive] Renovação do token agendada em', Math.round(renovarEm/60000), 'min');
-    _renovacaoTimer = setTimeout(() => renovarTokenSilencioso(), renovarEm);
-}
-
-function renovarTokenSilencioso() {
-    console.log('[Drive] Renovando token silenciosamente...');
-    // Remove iframe anterior se existir
-    const anterior = document.getElementById('oauth-renewal-frame');
-    if (anterior) anterior.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = 'oauth-renewal-frame';
-    iframe.style.display = 'none';
-
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const url = `https://accounts.google.com/o/oauth2/v2/auth`
-        + `?client_id=${GOOGLE_CLIENT_ID}`
-        + `&redirect_uri=${redirectUri}`
-        + `&response_type=token`
-        + `&scope=${encodeURIComponent(SCOPES)}`
-        + `&prompt=none`;  // sem interação do usuário
-
-    iframe.src = url;
-    document.body.appendChild(iframe);
-
-    // Captura o token do iframe quando carregar
-    iframe.onload = () => {
-        try {
-            const hash = iframe.contentWindow.location.hash;
-            if (hash) {
-                const params = new URLSearchParams(hash.replace('#', ''));
-                const token = params.get('access_token');
-                if (token) {
-                    S.googleToken = token;
-                    lsSet('agenda_google_token', token);
-                    lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
-                    console.log('[Drive] Token renovado com sucesso!');
-                    agendarRenovacaoToken(); // agenda próxima renovação
-                }
-            }
-        } catch(e) {
-            // CORS impede leitura — token expirou, usuário precisará reconectar
-            console.warn('[Drive] Renovação silenciosa falhou, usuário precisará reconectar.');
-        }
-        setTimeout(() => iframe.remove(), 2000);
-    };
-}
-
-// Baixa o backup do Drive e atualiza o estado local
-async function baixarBackupDrive(silencioso = false) {
-    if (!tokenValido()) {
-        if (!silencioso) toast('⚠️ Sessão Google expirada. Conecte novamente.');
-        S.googleToken = null;
-        return false;
-    }
-    try {
-        // Busca arquivo pelo nome padronizado
-        const q      = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
-        const search = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,modifiedTime)&spaces=drive`,
-            { headers: { Authorization: `Bearer ${S.googleToken}` } }
-        );
-        if (!search.ok) {
-            if (search.status === 401) {
-                S.googleToken = null;
-                lsSet('agenda_google_token', null);
-                if (!silencioso) toast('⚠️ Sessão Google expirada. Conecte novamente.');
-            }
-            return false;
-        }
-
-        const result = await search.json();
-        console.log('[Drive] Resultado da busca:', JSON.stringify(result));
-        if (!result.files || result.files.length === 0) {
-            // Nenhum arquivo encontrado — pode ser primeiro uso ou scope insuficiente
-            console.warn('[Drive] Arquivo', DRIVE_FILE_NAME, 'não encontrado no Drive.');
-            if (!silencioso) toast('☁️ Drive conectado! Nenhum backup encontrado ainda — os dados serão criados no próximo salvamento.');
-            return false;
-        }
-
-        const arquivo = result.files[0];
-        S.fileIdDrive = arquivo.id;
-        lsSet('agenda_drive_file_id', arquivo.id);
-
-        // Não baixa se nada mudou desde a última vez (polling silencioso)
-        const modDrive = new Date(arquivo.modifiedTime).getTime();
-        if (silencioso && _driveUltimaModificacao && modDrive <= _driveUltimaModificacao) {
-            return false;
-        }
-        _driveUltimaModificacao = modDrive;
-
-        const fileRes = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${arquivo.id}?alt=media`,
-            { headers: { Authorization: `Bearer ${S.googleToken}` } }
-        );
-        const banco = await fileRes.json();
-
-        // Suporta dois formatos:
-        // - Formato NOVO (desktop ≥ v2): agenda_agendamentos + agenda_tokens (sem pacientes)
-        // - Formato LEGADO (PWA salva): agendamentos + pacientes + tokens
-        const agendamentos = banco.agenda_agendamentos || banco.agendamentos || [];
-        const tokensObj    = banco.agenda_tokens       || banco.tokens       || {};
-        const config       = banco.config || null;
-
-        // Pacientes: o desktop novo não exporta mais a lista completa por segurança.
-        // Reconstruímos a partir dos tokens (cada token tem pacienteId + nomePaciente).
-        // Se o arquivo ainda tiver banco.pacientes (formato legado), usamos ele.
-        let pacientes = Array.isArray(banco.pacientes) ? banco.pacientes : [];
-        if (!pacientes.length && tokensObj && typeof tokensObj === 'object') {
-            // Extrai pacientes únicos dos tokens (nome + id para mostrar na agenda)
-            const mapa = {};
-            Object.values(tokensObj).forEach(tk => {
-                if (tk.pacienteId && tk.nomePaciente && !mapa[tk.pacienteId]) {
-                    mapa[tk.pacienteId] = { id: tk.pacienteId, nome: tk.nomePaciente, telefone: '' };
-                }
-            });
-            pacientes = Object.values(mapa);
-        }
-
-        console.log('[Drive] Conteúdo baixado — pacientes:', pacientes.length, '| agendamentos:', agendamentos.length, '| tokens:', Object.keys(tokensObj).length);
-
-        // Atualiza localStorage e IndexedDB com os dados do Drive
-        if (agendamentos.length || Array.isArray(banco.agenda_agendamentos))
-            lsSet('agenda_agendamentos', agendamentos);
-        if (pacientes.length || Array.isArray(banco.pacientes))
-            lsSet('agenda_pacientes', pacientes);
-        if (tokensObj && Object.keys(tokensObj).length)
-            lsSet('agenda_tokens', tokensObj);
-        if (config)
-            lsSet('agenda_config', config);
-
-        // Atualiza IndexedDB para uso offline
-        try {
-            for (const ag of agendamentos) await idbPut('agendamentos', ag);
-            for (const p  of pacientes)    await idbPut('pacientes', p);
-        } catch(e) {}
-
-        // Sempre atualiza S.pacientes e S.agendamentos na memória após download
-        S.pacientes    = lsGet('agenda_pacientes',    []);
-        S.agendamentos = lsGet('agenda_agendamentos', []);
-
-        if (silencioso) {
-            // Re-renderiza agenda se houver mudanças
-            renderizarAgenda();
-        } else {
-            toast('✅ Dados sincronizados do Google Drive!');
-            // Só volta para login se o usuário ainda não está autenticado
-            if (!S.adminPin) irTela('tela-login');
-        }
-        return true;
-    } catch(e) {
-        console.error('[Drive] Erro ao baixar backup:', e);
-        if (!silencioso) {
-            toast('☁️ Drive conectado!');
-            // Só redireciona para login se o usuário não estava autenticado
-            if (!S.adminPin) irTela('tela-login');
-        }
-        return false;
-    }
-}
-
-// Salva todos os dados no Drive
-async function salvarAlteracoesNoDrive() {
-    // Recarrega token salvo caso tenha sido perdido da memória
-    if (!S.googleToken) S.googleToken = lsGet('agenda_google_token', null);
-    if (!S.fileIdDrive) S.fileIdDrive = lsGet('agenda_drive_file_id', null);
-
-    if (!tokenValido()) {
-        // Sem token válido: salva apenas localmente e registra como pendente de sync
-        lsSet('agenda_sync_pendente', true);
-        console.warn('[Drive] Sem token válido — dados salvos localmente, sync pendente.');
-        return;
-    }
-
-    const payload = {
-        // Formato novo (compatível com desktop): agenda_agendamentos + agenda_tokens
-        agenda_agendamentos: S.agendamentos || [],
-        agenda_tokens:       lsGet('agenda_tokens', {}),
-        // Campos legados para retrocompatibilidade
-        agendamentos:        S.agendamentos || [],
-        tokens:              lsGet('agenda_tokens', {}),
-        config:              S.config,
-        _origem:             'celular',
-        _salvoEm:            new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-
-    try {
-        let url, method;
-
-        if (S.fileIdDrive) {
-            url    = `https://www.googleapis.com/upload/drive/v3/files/${S.fileIdDrive}?uploadType=media`;
-            method = 'PATCH';
-        } else {
-            // Cria o arquivo pela primeira vez
-            const meta = await fetch('https://www.googleapis.com/drive/v3/files', {
-                method:  'POST',
-                headers: { Authorization: `Bearer ${S.googleToken}`, 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ name: DRIVE_FILE_NAME, mimeType: 'application/json' })
-            });
-            if (!meta.ok) return;
-            const metaJson = await meta.json();
-            S.fileIdDrive  = metaJson.id;
-            lsSet('agenda_drive_file_id', S.fileIdDrive);
-            url    = `https://www.googleapis.com/upload/drive/v3/files/${S.fileIdDrive}?uploadType=media`;
-            method = 'PATCH';
-        }
-
-        const res = await fetch(url, {
-            method,
-            headers: { Authorization: `Bearer ${S.googleToken}`, 'Content-Type': 'application/json' },
-            body: blob
-        });
-
-        if (res.ok) {
-            const updated = await res.json();
-            if (updated.modifiedTime) {
-                _driveUltimaModificacao = new Date(updated.modifiedTime).getTime();
-            }
-            lsSet('agenda_sync_pendente', false);
-            console.log('[Drive] Salvo com sucesso.');
-        } else {
-            if (res.status === 401) { S.googleToken = null; lsSet('agenda_google_token', null); }
-            lsSet('agenda_sync_pendente', true);
-            console.warn('[Drive] Falha ao salvar:', res.status);
-        }
-    } catch(e) {
-        lsSet('agenda_sync_pendente', true);
-        console.error('[Drive] Erro ao salvar:', e);
-    }
-}
-
-// Quando volta online: sincroniza pendentes com o Drive
-async function sincronizarPendentes() {
-    const pendente = lsGet('agenda_sync_pendente', false);
-    if (!pendente) return;
-    if (!tokenValido()) return;
-    console.log('[Sync] Enviando dados pendentes para o Drive...');
-    await salvarAlteracoesNoDrive();
-    if (!lsGet('agenda_sync_pendente', false)) {
-        toast('✅ Dados sincronizados com o Google Drive!');
-    }
-}
-
-window.addEventListener('online', () => {
-    setTimeout(sincronizarPendentes, 2000);
-});
-
-// Polling: verifica atualizações no Drive a cada 30s quando a agenda está aberta
-function iniciarPollingDrive() {
-    if (_drivePollingTimer) clearInterval(_drivePollingTimer);
-    if (!tokenValido()) return;
-    _drivePollingTimer = setInterval(async () => {
-        if (!tokenValido()) { clearInterval(_drivePollingTimer); return; }
-        await baixarBackupDrive(true);
-    }, DRIVE_POLL_MS);
-    console.log(`[Drive] Polling ativo — verificando a cada ${DRIVE_POLL_MS / 1000}s`);
-}
-
-function pararPollingDrive() {
-    if (_drivePollingTimer) { clearInterval(_drivePollingTimer); _drivePollingTimer = null; }
-}
-
-// ══════════════════════════════════════════════════════
-// INDEXEDDB — cache offline
-// ══════════════════════════════════════════════════════
-
-const IDB_NOME   = 'AgendaClinica';
-const IDB_VERSAO = 1;
-let _idb = null;
-
-function abrirIDB() {
-    if (_idb) return Promise.resolve(_idb);
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(IDB_NOME, IDB_VERSAO);
-        req.onupgradeneeded = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('agendamentos'))
-                db.createObjectStore('agendamentos', { keyPath: 'id' });
-            if (!db.objectStoreNames.contains('pacientes'))
-                db.createObjectStore('pacientes',    { keyPath: 'id' });
-        };
-        req.onsuccess = e => { _idb = e.target.result; resolve(_idb); };
-        req.onerror   = e => reject(e.target.error);
-    });
-}
-
-async function idbGetAll(store) {
-    const db = await abrirIDB();
-    return new Promise((resolve, reject) => {
-        const tx  = db.transaction(store, 'readonly');
-        const req = tx.objectStore(store).getAll();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror   = () => reject(req.error);
-    });
-}
-
-async function idbPut(store, obj) {
-    const db = await abrirIDB();
-    return new Promise((resolve, reject) => {
-        const tx  = db.transaction(store, 'readwrite');
-        const req = tx.objectStore(store).put(obj);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror   = () => reject(req.error);
-    });
-}
-
-async function idbClear(store) {
-    const db = await abrirIDB();
-    return new Promise((resolve, reject) => {
-        const tx  = db.transaction(store, 'readwrite');
-        const req = tx.objectStore(store).clear();
-        req.onsuccess = () => resolve();
-        req.onerror   = () => reject(req.error);
-    });
-}
-
-// ══════════════════════════════════════════════════════
-// ESTADO GLOBAL
-// ══════════════════════════════════════════════════════
-
-const S = {
-    pin:            '',
-    adminPin:       null,
-    pacientes:      [],
-    agendamentos:   [],
-    semanaOffset:   0,
-    diaSelecionado: null,
-    slotStates:     {},
-    agDetalhe:      null,
-    linkGerado:     null,
-    telMedico:      '',
-    googleToken:    null,
-    fileIdDrive:    null,
-    config: { nome_clinica: 'Agenda Clínica', tel_medico: '', admin_pin: '1234' },
-};
-
-const DIAS_ABR  = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-const DIAS_FULL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-const MESES_ABR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const HORAS     = Array.from({length: 14}, (_, i) => i + 7); // 07:00 – 20:00
-
-// ══════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════
-
-const $ = id => document.getElementById(id);
-const horaLabel = h => `${String(h).padStart(2,'0')}:00`;
-const isoDate   = d => d.toISOString().slice(0, 10);
-const somarDias = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
-
-function lsGet(key, def = []) {
-    try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
-}
-function lsSet(key, val) {
-    localStorage.setItem(key, JSON.stringify(val));
-}
-
-// ══════════════════════════════════════════════════════
-// PERSISTÊNCIA — Drive primeiro, IndexedDB como fallback offline
-// ══════════════════════════════════════════════════════
-
-function carregarConfig() {
-    const saved = lsGet('agenda_config', null);
-    if (saved) S.config = { ...S.config, ...saved };
-}
-function salvarConfig_ls() {
-    lsSet('agenda_config', S.config);
-}
-
-async function carregarPacientes_ls() {
-    // 1. localStorage (já sincronizado pelo Drive)
-    const ls = lsGet('agenda_pacientes', []);
-    if (ls.length > 0) { S.pacientes = ls; return; }
-    // 2. Fallback: IndexedDB
-    try {
-        const idb = await idbGetAll('pacientes');
-        if (idb.length > 0) { S.pacientes = idb; return; }
-    } catch(e) {}
-    S.pacientes = [];
-}
-
-function salvarPacientes_ls() {
-    lsSet('agenda_pacientes', S.pacientes);
-    // Atualiza IndexedDB também
-    idbClear('pacientes').then(() => {
-        S.pacientes.forEach(p => idbPut('pacientes', p).catch(() => {}));
-    }).catch(() => {});
-}
-
-async function carregarAgendamentos_ls() {
-    // 1. localStorage (já sincronizado pelo Drive)
-    const ls = lsGet('agenda_agendamentos', []);
-    if (ls.length > 0) { S.agendamentos = ls; return; }
-    // 2. Fallback: IndexedDB (offline)
-    try {
-        const idb = await idbGetAll('agendamentos');
-        if (idb.length > 0) {
-            S.agendamentos = idb;
-            toast('📴 Modo offline — mostrando dados salvos localmente');
-            return;
-        }
-    } catch(e) {}
-    S.agendamentos = [];
-}
-
-function salvarAgendamentos_ls() {
-    lsSet('agenda_agendamentos', S.agendamentos);
-    // Atualiza IndexedDB também
-    idbClear('agendamentos').then(() => {
-        S.agendamentos.forEach(ag => idbPut('agendamentos', ag).catch(() => {}));
-    }).catch(() => {});
-}
-
-function carregarTokens_ls() {
-    return lsGet('agenda_tokens', {});
-}
-function salvarTokens_ls(tokens) {
-    lsSet('agenda_tokens', tokens);
-}
-
-// ══════════════════════════════════════════════════════
-// SEMANA
-// ══════════════════════════════════════════════════════
-
-function segundaFeiraDaSemana(offset = 0) {
-    const hoje = new Date();
-    const dom  = new Date(hoje);
-    dom.setDate(hoje.getDate() - hoje.getDay() + (offset * 7));
-    return dom;
-}
-function semanaLabel(inicio) {
-    const fim = somarDias(inicio, 6);
-    return `${inicio.getDate()} ${MESES_ABR[inicio.getMonth()]} – ${fim.getDate()} ${MESES_ABR[fim.getMonth()]} ${fim.getFullYear()}`;
-}
-
-// ══════════════════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════════════════
-
-function toast(msg, dur = 2500) {
-    const t = $('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.style.display = 'block';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.style.display = 'none', dur);
-}
-// Alias para compatibilidade com chamadas antigas
-const mostrarToast = toast;
-
-function irTela(id) {
-    document.querySelectorAll('.tela').forEach(t => t.style.display = 'none');
-    const tela = $(id);
-    if (tela) tela.style.display = 'flex';
-    else console.warn(`Tela "${id}" não encontrada.`);
-
-    clearInterval(window._pollingAgenda);
-    pararPollingDrive();
-
-    if (id === 'tela-login') {
-        // Mostra card de login automaticamente (ex: após sincronização Drive)
-        setTimeout(() => {
-            if (typeof window.mostrarCardLogin === 'function') {
-                window.mostrarCardLogin();
-            } else {
-                const splash  = document.getElementById('login-splash');
-                const card    = document.getElementById('login-card-wrap');
-                const overlay = document.getElementById('login-overlay');
-                const bg      = document.getElementById('login-bg');
-                if (splash)  splash.style.display = 'none';
-                if (overlay) overlay.style.pointerEvents = 'none';
-                if (bg)      bg.style.pointerEvents = 'none';
-                if (card)    card.style.display = 'flex';
-            }
-        }, 100);
-
-        // Atualiza botão do Drive
-        const btnDrive = document.querySelector('.btn-google');
-        if (btnDrive) {
-            if (tokenValido()) {
-                btnDrive.innerHTML = '<i class="fa-brands fa-google"></i> Google Drive sincronizado ✓';
-                btnDrive.style.background = '#e8f5e9';
-                btnDrive.style.color = '#2e7d32';
-                btnDrive.style.border = '1.5px solid #a5d6a7';
-            } else {
-                btnDrive.innerHTML = '<i class="fa-brands fa-google"></i> Sincronizar via Google Drive';
-                btnDrive.style.background = '';
-                btnDrive.style.color = '';
-                btnDrive.style.border = '';
-            }
-        }
-
-        // Reseta PIN para nova entrada
-        S.pin = '';
-        atualizarPinDisplay();
-    }
-
-    if (id === 'tela-config') {
-        setTimeout(atualizarStatusDrive, 100);
-    }
-
-    if (id === 'tela-agenda') {
-        setTimeout(atualizarStatusDrive, 100);
-        // Polling leve: re-renderiza se localStorage mudar (ex: outra aba)
-        window._pollingAgenda = setInterval(async () => {
-            const antes = JSON.stringify(S.agendamentos);
-            await carregarAgendamentos_ls();
-            if (JSON.stringify(S.agendamentos) !== antes) renderizarAgenda();
-        }, 15000);
-        iniciarPollingDrive();
-    }
-}
-
-function fecharModal(id) {
-    const el = $(id);
-    if (el) el.style.display = 'none';
-}
-
-// ══════════════════════════════════════════════════════
-// PIN
-// ══════════════════════════════════════════════════════
-
-function atualizarPinDisplay() {
-    const container = $('pin-display') || document.querySelector('.pin-circles');
-    let spans = container ? Array.from(container.querySelectorAll('span')) : [];
-    if (!spans.length) spans = Array.from(document.querySelectorAll('.pin-dot'));
-    spans.forEach((s, i) => { s.className = i < S.pin.length ? 'filled' : ''; });
-    const inp = document.querySelector('input[type="password"]') || $('login-pin');
-    if (inp) inp.value = S.pin;
-}
-
-function pinDigit(num) {
-    if (S.pin.length >= 4) return;
-    S.pin += String(num);
-    atualizarPinDisplay();
-    if (S.pin.length === 4) setTimeout(pinEnter, 200);
-}
-
-function pinApagar() { S.pin = S.pin.slice(0, -1); atualizarPinDisplay(); }
-function pinClear()  { S.pin = ''; atualizarPinDisplay(); }
-
-async function pinEnter() {
-    const pinCorreto = S.config.admin_pin || '1234';
-    if (S.pin === pinCorreto) {
-        S.adminPin = S.pin;
-        lsSet('agenda_admin_pin_session', S.pin); // salva para restaurar após OAuth
-        S.pin = '';
-        atualizarPinDisplay();
-        await carregarTudo();
-        irTela('tela-agenda');
-        atualizarStatusDrive();
-        await renderizarAgenda();
-        // ✅ CORREÇÃO: após entrar, baixa Drive para garantir dados atualizados
-        if (tokenValido()) {
-            baixarBackupDrive(true).then(async (baixou) => {
-                if (baixou) {
-                    await carregarPacientes_ls();
-                    await carregarAgendamentos_ls();
-                    renderizarAgenda();
-                }
-            }).catch(() => {});
-        }
-    } else {
-        const display = $('pin-display') || document.querySelector('.pin-circles');
-        const msgErro = $('login-erro');
-        if (display) display.classList.add('error');
-        if (msgErro) { msgErro.style.display = 'block'; msgErro.textContent = 'PIN incorreto.'; }
-        S.pin = '';
-        atualizarPinDisplay();
-        setTimeout(() => {
-            if (display) display.classList.remove('error');
-            if (msgErro) msgErro.style.display = 'none';
-        }, 2000);
-    }
-}
-
-function logout() {
-    S.adminPin = null;
-    S.pin = '';
-    atualizarPinDisplay();
-    pararPollingDrive();
-    irTela('tela-login');
-}
-
-async function carregarTudo() {
-    carregarConfig();
-    await carregarPacientes_ls();
-    await carregarAgendamentos_ls();
-    if ($('menu-clinica-nome')) $('menu-clinica-nome').textContent = S.config.nome_clinica;
-    if ($('cfg-nome-clinica')) $('cfg-nome-clinica').value = S.config.nome_clinica;
-    if ($('cfg-tel'))          $('cfg-tel').value = S.config.tel_medico || '';
-    if ($('cfg-pin'))          $('cfg-pin').value = '';
-}
-
-// ══════════════════════════════════════════════════════
-// AGENDA
-// ══════════════════════════════════════════════════════
-
-async function renderizarAgenda() {
-    await carregarAgendamentos_ls();
-    const inicio = segundaFeiraDaSemana(S.semanaOffset);
-    const dias   = Array.from({length: 7}, (_, i) => somarDias(inicio, i));
-    const hoje   = isoDate(new Date());
-
-    const labelEl1 = $('header-semana-label');
-    const labelEl2 = $('semana-nav-label');
-    if (labelEl1) labelEl1.textContent = semanaLabel(inicio);
-    if (labelEl2) labelEl2.textContent = semanaLabel(inicio);
-
-    const grade = $('grade-agenda');
-    if (!grade) return;
-    grade.innerHTML = '';
-
-    const hh = document.createElement('div');
-    hh.className = 'ga-hora-header';
-    grade.appendChild(hh);
-
-    dias.forEach(d => {
-        const iso = isoDate(d);
-        const div = document.createElement('div');
-        div.className = 'ga-dia-header'
-            + (iso === hoje ? ' hoje' : '')
-            + (iso === S.diaSelecionado ? ' selecionado' : '');
-        const imgs   = window.PP_IMGS || [];
-        const imgIdx = (d.getDay() + S.semanaOffset * 7 + Math.floor(d.getDate() / 7)) % (imgs.length || 1);
-        const imgSrc = imgs.length ? imgs[imgIdx] : '';
-        const imgTag = imgSrc ? `<img src="${imgSrc}" class="ga-dia-img" alt="✿" onclick="event.stopPropagation();abrirImagemDia('${imgSrc}')" onerror="this.style.display='none'" title="Clique para ampliar" style="cursor:zoom-in;">` : '✿';
-        div.innerHTML = `<div class="ga-dia-nome">${DIAS_ABR[d.getDay()]}</div><div class="ga-dia-num">${d.getDate()}</div>${imgTag}`;
-        div.onclick = () => selecionarDia(iso);
-        grade.appendChild(div);
-    });
-
-    HORAS.forEach(h => {
-        const lbl = document.createElement('div');
-        lbl.className = 'ga-hora-label';
-        lbl.textContent = horaLabel(h);
-        grade.appendChild(lbl);
-
-        dias.forEach(d => {
-            const iso = isoDate(d);
-            const ag  = S.agendamentos.find(a => a.data === iso && parseInt(a.hora) === h);
-            const cel = document.createElement('div');
-            cel.className = 'ga-celula ' + (ag ? 'agendado' : 'livre');
-            if (ag) {
-                const chip = document.createElement('div');
-                chip.className = `ga-chip ${ag.status || 'confirmado'}`;
-                chip.textContent = (ag.nome_paciente || ag.paciente || '').split(' ')[0];
-                cel.appendChild(chip);
-                cel.onclick = () => abrirModalDetalhe(ag.id);
-            } else {
-                cel.onclick = () => abrirModalAdd(iso, h);
-            }
-            grade.appendChild(cel);
-        });
-    });
-
-    S.diaSelecionado = S.diaSelecionado || hoje;
-    renderizarListaDia();
-}
-
-function selecionarDia(iso) { S.diaSelecionado = iso; renderizarAgenda(); }
-
-function renderizarListaDia() {
-    const iso = S.diaSelecionado || isoDate(new Date());
-    const d   = new Date(iso + 'T00:00:00');
-    const headerEl = $('dia-lista-header');
-    if (headerEl) headerEl.textContent = `${DIAS_FULL[d.getDay()]}, ${d.getDate()} de ${MESES_ABR[d.getMonth()]}`;
-
-    const lista  = $('dia-lista');
-    if (!lista) return;
-    const agsDia = S.agendamentos.filter(a => a.data === iso).sort((a, b) => a.hora - b.hora);
-    lista.innerHTML = '';
-
-    if (!agsDia.length) {
-        lista.innerHTML = `<div class="lista-vazio"><i class="fa-regular fa-calendar"></i> Nenhuma consulta este dia</div>`;
-        return;
-    }
-
-    agsDia.forEach(ag => {
-        const div  = document.createElement('div');
-        div.className = 'ag-item';
-        const cod  = ag.codigo_paciente ? `#${String(ag.codigo_paciente).padStart(3,'0')}` : '';
-        const nome = ag.nome_paciente || ag.paciente || 'Paciente';
-        const st   = ag.status || 'confirmado';
-        div.innerHTML = `
-            <div class="ag-hora">${horaLabel(ag.hora)}</div>
-            <div class="ag-info">
-                <div class="ag-nome">${nome}</div>
-                ${cod ? `<div class="ag-cod">${cod}</div>` : ''}
-            </div>
-            <span class="ag-badge ${st}">${st === 'confirmado' ? 'Confirmado' : 'Aguardando'}</span>
-        `;
-        div.onclick = () => abrirModalDetalhe(ag.id);
-        lista.appendChild(div);
-    });
-}
-
-function semanaAnterior() { S.semanaOffset--; renderizarAgenda(); }
-function semanaProxima()  { S.semanaOffset++; renderizarAgenda(); }
-function irHoje()         { S.semanaOffset = 0; S.diaSelecionado = isoDate(new Date()); renderizarAgenda(); }
-
-// ══════════════════════════════════════════════════════
-// MODAL: DETALHE
-// ══════════════════════════════════════════════════════
-
-function abrirModalDetalhe(id) {
-    const ag = S.agendamentos.find(a => a.id === id);
-    if (!ag) return;
-    S.agDetalhe = ag;
-    const d    = new Date(ag.data + 'T00:00:00');
-    const nome = ag.nome_paciente || ag.paciente || 'Paciente';
-    const st   = ag.status || 'confirmado';
-    const cod  = ag.codigo_paciente ? `<span class="pac-codigo">#${String(ag.codigo_paciente).padStart(3,'0')}</span>` : '';
-    $('modal-detalhe-corpo').innerHTML = `
-        <div class="detalhe-row"><span class="dr-label">Paciente</span><span class="dr-val">${cod} ${nome}</span></div>
-        <div class="detalhe-row"><span class="dr-label">Data</span><span class="dr-val">${DIAS_FULL[d.getDay()]}, ${d.getDate()} de ${MESES_ABR[d.getMonth()]}</span></div>
-        <div class="detalhe-row"><span class="dr-label">Horário</span><span class="dr-val">${horaLabel(ag.hora)} – ${horaLabel(parseInt(ag.hora)+1)}</span></div>
-        <div class="detalhe-row"><span class="dr-label">Status</span><span class="dr-val"><span class="ag-badge ${st}">${st === 'confirmado' ? '✅ Confirmado' : '⏳ Aguardando'}</span></span></div>
-        ${ag.obs ? `<div class="detalhe-row"><span class="dr-label">Obs</span><span class="dr-val">${ag.obs}</span></div>` : ''}
-    `;
-    const btnPron = $('btn-prontuario');
-    if (btnPron) btnPron.style.display = 'none';
-    $('modal-detalhe').style.display = 'flex';
-}
-
-async function cancelarAgendamento() {
-    if (!S.agDetalhe) return;
-    if (!confirm('Cancelar esta consulta?')) return;
-
-    const ag = S.agDetalhe;
-
-    // Publica no GitHub com status cancelado para o desktop processar
-    try {
-        const tokenAtivo = S.tokenAtivo || (S.tokens && Object.keys(S.tokens)[0]);
-        if (tokenAtivo) {
-            await _pushAgendamentoGithub({ ...ag, status: 'cancelado' }, tokenAtivo);
-        }
-    } catch(e) {
-        console.warn('[Cancelamento] Erro ao notificar GitHub:', e);
-    }
-
-    // Remove localmente
-    S.agendamentos = S.agendamentos.filter(a => a.id !== ag.id);
-    salvarAgendamentos_ls();
-    fecharModal('modal-detalhe');
-    toast('Consulta cancelada.');
-    renderizarAgenda();
-
-    // Salva no Drive com o agendamento marcado como cancelado
-    // para o desktop importar o status e excluir do banco
-    const listaOriginal = S.agendamentos;
-    S.agendamentos = [...listaOriginal, { ...ag, status: 'cancelado' }];
-    await salvarAlteracoesNoDrive();
-    S.agendamentos = listaOriginal;
-}
-
-function irProntuario() {}
-
-// ══════════════════════════════════════════════════════
-// MODAL: ADICIONAR MANUAL
-// ══════════════════════════════════════════════════════
-
-function abrirModalAdd(data, hora) {
-    const d = new Date(data + 'T00:00:00');
-    const horarioEl = $('modal-add-horario');
-    if (horarioEl) horarioEl.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ${DIAS_FULL[d.getDay()]}, ${d.getDate()} de ${MESES_ABR[d.getMonth()]} — ${horaLabel(hora)}`;
-    const obsEl = $('add-obs');
-    if (obsEl) obsEl.value = '';
-
-    const sel = $('add-pac-sel');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Selecione um paciente —</option>';
-    [...S.pacientes].sort((a,b) => (a.nome||'').localeCompare(b.nome||'')).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        const cod = p.codigo ? `#${String(p.codigo).padStart(3,'0')} — ` : '';
-        opt.textContent = `${cod}${p.nome}`;
-        sel.appendChild(opt);
-    });
-
-    sel._data = data;
-    sel._hora = hora;
-    $('modal-add').style.display = 'flex';
-}
-
-async function salvarAgendamentoManual() {
-    const sel   = $('add-pac-sel');
-    const pacId = sel.value;
-    if (!pacId) { toast('Selecione um paciente.'); return; }
-    const pac  = S.pacientes.find(p => String(p.id) === String(pacId));
-    const data = sel._data;
-    const hora = sel._hora;
-    const obs  = ($('add-obs')?.value || '').trim();
-
-    const novo = {
-        id:              'ag_' + Date.now(),
-        paciente_id:     pacId,
-        nome_paciente:   pac.nome,
-        codigo_paciente: pac.codigo || null,
-        data, hora, obs,
-        status: 'confirmado'
-    };
-
-    S.agendamentos.push(novo);
-    salvarAgendamentos_ls();
-    fecharModal('modal-add');
-    toast(`Consulta de ${pac.nome} agendada!`);
-    renderizarAgenda();
-    await salvarAlteracoesNoDrive();
-}
-
-// ══════════════════════════════════════════════════════
-// MODAL: GERAR LINK
-// ══════════════════════════════════════════════════════
-
-function abrirModalGerarLink() {
-    S.slotStates = {};
-    const lrEl = $('ml-link-resultado');
-    if (lrEl) lrEl.style.display = 'none';
-    const piEl = $('ml-pac-info');
-    if (piEl) piEl.style.display = 'none';
-    const obsEl = $('ml-obs');
-    if (obsEl) obsEl.value = '';
-
-    const sel = $('ml-paciente');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">— Selecione —</option>';
-    [...S.pacientes].sort((a,b) => (a.nome||'').localeCompare(b.nome||'')).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        const cod = p.codigo ? `#${String(p.codigo).padStart(3,'0')} — ` : '';
-        opt.textContent = `${cod}${p.nome}`;
-        sel.appendChild(opt);
-    });
-
-    const selSem = $('ml-semana');
-    if (selSem) {
-        selSem.innerHTML = '';
-        for (let i = 0; i <= 3; i++) {
-            const ini = segundaFeiraDaSemana(S.semanaOffset + i);
-            const opt = document.createElement('option');
-            opt.value = isoDate(ini);
-            opt.textContent = semanaLabel(ini);
-            selSem.appendChild(opt);
-        }
-    }
-
-    renderizarGradeModal();
-    $('modal-link').style.display = 'flex';
-}
-
-function onModalPacienteChange() {
-    const pacId = $('ml-paciente').value;
-    const info  = $('ml-pac-info');
-    const pac   = S.pacientes.find(p => String(p.id) === String(pacId));
-    if (!pac || !info) { if(info) info.style.display = 'none'; return; }
-    const cod = pac.codigo ? `<span class="pac-codigo">#${String(pac.codigo).padStart(3,'0')}</span>` : '';
-    info.style.display = 'flex';
-    info.innerHTML = `
-        ${cod}
-        <span class="pac-info-nome">${pac.nome}</span>
-        ${pac.telefone ? `<span class="pac-info-tel"><i class="fa-solid fa-phone"></i> ${pac.telefone}</span>` : ''}
-    `;
-}
-
-function renderizarGradeModal() {
-    S.slotStates = {};
-    const selSem = $('ml-semana');
-    if (!selSem) return;
-    const isoInicio = selSem.value;
-    const inicio    = new Date(isoInicio + 'T00:00:00');
-    const dias      = Array.from({length:7}, (_, i) => somarDias(inicio, i));
-    const container = $('ml-grade');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const grid = document.createElement('div');
-    grid.className = 'modal-grade-grid';
-    container.appendChild(grid);
-
-    dias.forEach(d => {
-        const iso = isoDate(d);
-        const col = document.createElement('div');
-        col.className = 'modal-grade-col';
-
-        const hdr = document.createElement('div');
-        hdr.className = 'modal-grade-col-header';
-        hdr.textContent = `${DIAS_ABR[d.getDay()]} ${d.getDate()}`;
-        col.appendChild(hdr);
-
-        HORAS.forEach(h => {
-            const chave   = `${iso}_${h}`;
-            const ocupado = S.agendamentos.some(a => a.data === iso && parseInt(a.hora) === h);
-            const btn     = document.createElement('button');
-            btn.type      = 'button';
-            btn.dataset.chave = chave;
-
-            if (ocupado) {
-                btn.className = 'mg-slot slot-ocupado';
-                btn.textContent = horaLabel(h);
-                btn.disabled = true;
-            } else {
-                S.slotStates[chave] = 'neutro';
-                btn.className = 'mg-slot slot-neutro';
-                btn.textContent = horaLabel(h);
-                btn.onclick = () => {
-                    const estados = ['neutro', 'disponivel', 'indisponivel'];
-                    const atual   = S.slotStates[chave] || 'neutro';
-                    const prox    = estados[(estados.indexOf(atual) + 1) % 3];
-                    S.slotStates[chave] = prox;
-                    btn.className = `mg-slot slot-${prox}`;
-                    if (prox === 'disponivel')        btn.textContent = '✓ ' + horaLabel(h);
-                    else if (prox === 'indisponivel') btn.textContent = '✕ ' + horaLabel(h);
-                    else                              btn.textContent = horaLabel(h);
-                };
-            }
-            col.appendChild(btn);
-        });
-        grid.appendChild(col);
-    });
-}
-
-async function gerarLink() {
-    const pacId = $('ml-paciente').value;
-    if (!pacId) { toast('Selecione um paciente.'); return; }
-    const pac = S.pacientes.find(p => String(p.id) === String(pacId));
-
-    const slots = [], bloqueados = [];
-    Object.entries(S.slotStates).forEach(([chave, estado]) => {
-        const [data, hora] = chave.split('_');
-        if (estado === 'disponivel')   slots.push({ data, hora: parseInt(hora) });
-        if (estado === 'indisponivel') bloqueados.push({ data, hora: parseInt(hora) });
-    });
-    if (!slots.length) { toast('Marque ao menos um horário disponível (✓).'); return; }
-
-    const token = 'tk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    const dadosToken = {
-        pacienteId:   pac.id,
-        nomePaciente: pac.nome,
-        slots,
-        bloqueados,
-        obs:          ($('ml-obs')?.value || '').trim(),
-        criadoEm:     new Date().toISOString(),
-        usado:        false
-    };
-
-    const tokens = carregarTokens_ls();
-    tokens[token] = dadosToken;
-    salvarTokens_ls(tokens);
-
-    const link = `${window.location.origin}${window.location.pathname}?t=${token}`;
-    S.linkGerado = { link, pac };
-
-    const lv = $('ml-link-valor');
-    if (lv) {
-        lv.value = link;
-        let linkEl = $('ml-link-ancora');
-        if (!linkEl) {
-            linkEl = document.createElement('a');
-            linkEl.id = 'ml-link-ancora';
-            linkEl.target = '_blank';
-            linkEl.style.cssText = 'display:block;word-break:break-all;color:var(--accent2);font-size:.8rem;margin-top:.5rem;text-decoration:underline;cursor:pointer;';
-            const lr2 = $('ml-link-resultado');
-            if (lr2) lr2.appendChild(linkEl);
-        }
-        linkEl.href = link;
-        linkEl.textContent = link;
-    }
-
-    const lr = $('ml-link-resultado');
-    if (lr) lr.style.display = 'flex';
-    toast('Link gerado!');
-    await salvarAlteracoesNoDrive();
-}
-
-function copiarLink() {
-    const inp = $('ml-link-valor');
-    if (!inp) return;
-    const texto = inp.value;
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(texto).then(() => toast('Link copiado!'));
-        return;
-    }
-    inp.select();
-    inp.setSelectionRange(0, 99999);
-    try { document.execCommand('copy'); toast('Link copiado!'); }
-    catch(e) { toast('Selecione e copie manualmente (Ctrl+C)'); }
-}
-
-// ══════════════════════════════════════════════════════
-// MODAL: LINKS FIXOS
-// ══════════════════════════════════════════════════════
-
-async function abrirModalFixos() {
-    const corpo = $('modal-fixos-corpo');
-    if (!corpo) return;
-    $('modal-fixos').style.display = 'flex';
-    corpo.innerHTML = '<p style="color:var(--text2);padding:1rem;">Gerando links...</p>';
-
-    const inicio   = segundaFeiraDaSemana(S.semanaOffset);
-    const pacFixos = S.pacientes.filter(p => p.horario_fixo);
-
-    if (!pacFixos.length) {
-        corpo.innerHTML = '<p style="color:var(--text2);padding:1rem;text-align:center;">Nenhum paciente com horário fixo cadastrado.</p>';
-        return;
-    }
-
-    corpo.innerHTML = '';
-    const tokens = carregarTokens_ls();
-
-    pacFixos.forEach(p => {
-        const hf       = typeof p.horario_fixo === 'string' ? JSON.parse(p.horario_fixo) : p.horario_fixo;
-        const diaOffset = (hf.diaSemana - inicio.getDay() + 7) % 7;
-        const dataFixa  = somarDias(inicio, diaOffset);
-        const iso       = isoDate(dataFixa);
-
-        const token = 'tk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-        tokens[token] = {
-            pacienteId:   p.id,
-            nomePaciente: p.nome,
-            slots:        [{ data: iso, hora: hf.hora }],
-            bloqueados:   [],
-            horarioFixo:  true,
-            criadoEm:     new Date().toISOString(),
-            usado:        false
-        };
-        const link = `${window.location.origin}${window.location.pathname}?t=${token}`;
-
-        const div = document.createElement('div');
-        div.className = 'fixo-item';
-        div.innerHTML = `
-            <div class="fixo-item-info">
-                <div class="fixo-item-nome">${p.nome}</div>
-                <div class="fixo-item-horario">${DIAS_FULL[hf.diaSemana]}, ${dataFixa.getDate()} de ${MESES_ABR[dataFixa.getMonth()]} — ${horaLabel(hf.hora)}</div>
-            </div>
-            <a class="fixo-item-link" href="https://wa.me/${(p.telefone||'').replace(/\D/g,'')}?text=${encodeURIComponent(`Olá, ${p.nome}! Confirme sua consulta:\n\n${link}`)}" target="_blank">
-                <i class="fa-brands fa-whatsapp"></i> Enviar
-            </a>
-        `;
-        corpo.appendChild(div);
-    });
-
-    salvarTokens_ls(tokens);
-    await salvarAlteracoesNoDrive();
-}
-
-// ══════════════════════════════════════════════════════
-// PACIENTES
-// ══════════════════════════════════════════════════════
-
-async function abrirTelaPacientes() {
-    await carregarPacientes_ls();
-    renderizarListaPacientes();
-    irTela('tela-pacientes');
-}
-
-function renderizarListaPacientes(filtro = '') {
-    const lista = $('lista-pacientes');
-    if (!lista) return;
-    lista.innerHTML = '';
-    const arr = S.pacientes.filter(p =>
-        (p.nome||'').toLowerCase().includes(filtro.toLowerCase()) ||
-        String(p.codigo||'').includes(filtro)
-    ).sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
-
-    if (!arr.length) {
-        lista.innerHTML = `<div class="lista-vazio"><i class="fa-solid fa-users-slash"></i> Nenhum paciente encontrado</div>`;
-        return;
-    }
-    arr.forEach(p => {
-        const hf  = p.horario_fixo ? (typeof p.horario_fixo === 'string' ? JSON.parse(p.horario_fixo) : p.horario_fixo) : null;
-        const cod = p.codigo ? `#${String(p.codigo).padStart(3,'0')}` : '';
-        const div = document.createElement('div');
-        div.className = 'pac-item';
-        div.innerHTML = `
-            <div class="pac-avatar">${(p.nome||'?')[0].toUpperCase()}</div>
-            <div class="pac-item-info">
-                <div class="pac-item-nome">${p.nome}</div>
-                <div class="pac-item-sub" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.25rem;">
-                    ${cod ? `<span class="pac-codigo-tag">${cod}</span>` : ''}
-                    ${p.telefone ? `<span style="font-size:.75rem;color:var(--text2);">${p.telefone}</span>` : ''}
-                    ${hf ? `<span class="pac-fixo-tag"><i class="fa-solid fa-rotate"></i> Fixo ${DIAS_ABR[hf.diaSemana]} ${horaLabel(hf.hora)}</span>` : ''}
-                </div>
-            </div>
-            <button onclick="editarPaciente('${p.id}')" style="background:none;border:none;color:var(--text2);cursor:pointer;padding:.5rem;"><i class="fa-solid fa-pen"></i></button>
-        `;
-        lista.appendChild(div);
-    });
-}
-
-function filtrarPacientes() { renderizarListaPacientes($('busca-pac')?.value || ''); }
-
-function abrirModalPaciente(p = null) {
-    if ($('pac-edit-id'))    $('pac-edit-id').value    = p?.id || '';
-    if ($('pac-nome'))       $('pac-nome').value       = p?.nome || '';
-    if ($('pac-tel'))        $('pac-tel').value        = p?.telefone || '';
-    if ($('pac-email'))      $('pac-email').value      = p?.email || '';
-    const hf = p?.horario_fixo ? (typeof p.horario_fixo === 'string' ? JSON.parse(p.horario_fixo) : p.horario_fixo) : null;
-    if ($('pac-fixo-check')) $('pac-fixo-check').checked = !!hf;
-    toggleHorarioFixo();
-    if (hf) {
-        if ($('pac-fixo-dia'))  $('pac-fixo-dia').value  = hf.diaSemana;
-        if ($('pac-fixo-hora')) $('pac-fixo-hora').value = hf.hora;
-    }
-    const titulo = $('modal-pac-titulo');
-    if (titulo) titulo.innerHTML = p
-        ? `<i class="fa-solid fa-user-pen"></i> Editar Paciente`
-        : `<i class="fa-solid fa-user-plus"></i> Novo Paciente`;
-    $('modal-pac').style.display = 'flex';
-}
-
-function editarPaciente(id) {
-    const p = S.pacientes.find(p => String(p.id) === String(id));
-    if (p) abrirModalPaciente(p);
-}
-
-function toggleHorarioFixo() {
-    const fixoOpts = $('fixo-opcoes');
-    const check    = $('pac-fixo-check');
-    if (fixoOpts && check) fixoOpts.style.display = check.checked ? 'grid' : 'none';
-}
-
-async function salvarPaciente() {
-    const nome = ($('pac-nome')?.value || '').trim();
-    if (!nome) { toast('Informe o nome do paciente.'); return; }
-    const hf = $('pac-fixo-check')?.checked
-        ? { diaSemana: parseInt($('pac-fixo-dia').value), hora: parseInt($('pac-fixo-hora').value) }
-        : null;
-    const editId = $('pac-edit-id')?.value;
-    const dados = {
-        id:           editId || ('pac_' + Date.now()),
-        nome,
-        telefone:     ($('pac-tel')?.value || '').trim(),
-        email:        ($('pac-email')?.value || '').trim(),
-        horario_fixo: hf,
-        codigo:       editId
-            ? (S.pacientes.find(p => String(p.id) === editId)?.codigo || S.pacientes.length + 1)
-            : (S.pacientes.length + 1)
-    };
-
-    if (editId) {
-        const idx = S.pacientes.findIndex(p => String(p.id) === editId);
-        if (idx >= 0) S.pacientes[idx] = dados;
-        else S.pacientes.push(dados);
-    } else {
-        S.pacientes.push(dados);
-    }
-
-    salvarPacientes_ls();
-    fecharModal('modal-pac');
-    toast(`Paciente ${editId ? 'atualizado' : 'cadastrado'}!`);
-    renderizarListaPacientes($('busca-pac')?.value || '');
-    await salvarAlteracoesNoDrive();
-}
-
-// ══════════════════════════════════════════════════════
-// CONFIGURAÇÕES — Tailscale removido
-// ══════════════════════════════════════════════════════
-
-function salvarConfig() {
-    const pin = ($('cfg-pin')?.value || '').trim();
-    if (pin) {
-        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { toast('PIN deve ter 4 dígitos.'); return; }
-        S.config.admin_pin = pin;
-        S.adminPin = pin;
-    }
-    S.config.nome_clinica = ($('cfg-nome-clinica')?.value || '').trim() || 'Agenda Clínica';
-    S.config.tel_medico   = ($('cfg-tel')?.value || '').trim();
-    S.telMedico = S.config.tel_medico;
-    // Preserva o e-mail do responsável (usado na licença e no backup)
-    const emailInput = $('cfg-email');
-    if (emailInput && emailInput.value.trim()) {
-        S.config.email_responsavel = emailInput.value.trim().toLowerCase();
-    }
-    salvarConfig_ls();
-    if ($('menu-clinica-nome')) $('menu-clinica-nome').textContent = S.config.nome_clinica;
-    toast('Configurações salvas!');
-    salvarAlteracoesNoDrive();
-}
-
-// ── TEMA ──────────────────────────────────────────────────
-function aplicarTemaAgenda(tema) {
-    // Remove antes para forçar re-aplicação (fix iOS Safari)
-    document.documentElement.removeAttribute('data-tema');
-    document.body.removeAttribute('data-tema');
-    requestAnimationFrame(function() {
-        document.documentElement.setAttribute('data-tema', tema);
-        document.body.setAttribute('data-tema', tema);
-        // Força repaint em mobile
-        document.body.style.display = 'none';
-        void document.body.offsetHeight;
-        document.body.style.display = '';
-    });
-    localStorage.setItem('tema_agenda', tema);
-    const btn = document.getElementById('btn-alternar-tema-agenda');
-    if (btn) {
-        if (tema === 'azul') {
-            btn.title = 'Mudar para tema Verde';
-            btn.style.color = '#2563ab';
-        } else if (tema === 'verde') {
-            btn.title = 'Mudar para tema Rosa';
-            btn.style.color = '#22a05a';
-        } else {
-            btn.title = 'Mudar para tema Azul';
-            btn.style.color = '#e87fa0';
-        }
-    }
-}
-
-function alternarTemaAgenda() {
-    const atual = localStorage.getItem('tema_agenda') || 'rosa';
-    const proximo = atual === 'rosa' ? 'azul' : atual === 'azul' ? 'verde' : 'rosa';
-    aplicarTemaAgenda(proximo);
-}
-
-// Aplica tema salvo ao carregar
-(function() {
-    const temaSalvo = localStorage.getItem('tema_agenda') || 'rosa';
-    aplicarTemaAgenda(temaSalvo);
-})();
-
-// ══════════════════════════════════════════════════════
-// TELA PACIENTE (link público de agendamento)
-// ══════════════════════════════════════════════════════
-
-let pacToken  = null;
-let pacConfig = null;
-let pacSlot   = null;
-const DIAS_PT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-
-async function iniciarTelaPaciente() {
-    const params = new URLSearchParams(location.search);
-    const t      = params.get('t');
-    if (!t) return;
-
-    pacToken = t;
-    irTela('tela-paciente');
-
-    // 1. Tenta buscar o token direto do GitHub (funciona sem autenticação)
-    let cfg = await _buscarTokenGithub(t);
-
-    // 2. Fallback: tenta pelo Drive se a psicóloga estiver autenticada
-    if (!cfg && tokenValido()) {
-        await baixarBackupDrive(true);
-        const tokens = carregarTokens_ls();
-        cfg = tokens[t] || null;
-    }
-
-    // 3. Fallback: localStorage local (caso já tenha sido baixado antes)
-    if (!cfg) {
-        const tokens = carregarTokens_ls();
-        cfg = tokens[t] || null;
-    }
-
-    if (!cfg) { renderizarPacErro('Link inválido ou expirado.'); return; }
-    if (cfg.usado) { renderizarPacErro('Este link já foi utilizado.'); return; }
-
-    pacConfig = cfg;
-    const subtituloEl = $('pac-subtitulo');
-    if (subtituloEl) subtituloEl.textContent = `Olá, ${cfg.nomePaciente}! Confirme seu horário.`;
-    renderizarPacGrade();
-}
-
-// Busca o token no GitHub raw (público, sem autenticação)
-async function _buscarTokenGithub(token) {
-    try {
-        const url = `https://raw.githubusercontent.com/marciosublim-code/agenda-clinica/main/tokens/${token}.json?nocache=${Date.now()}`;
-        const resp = await fetch(url);
-        if (!resp.ok) return null;
-        return await resp.json();
-    } catch(e) {
-        return null;
-    }
-}
-
-function renderizarPacGrade() {
-    const corpo = $('pac-corpo');
-    if (!corpo) return;
-
-    if (pacConfig.horarioFixo && pacConfig.slots.length === 1) {
-        pacSlot = pacConfig.slots[0];
-        renderizarPacConfirmacao();
-        return;
-    }
-
-    const slots      = pacConfig.slots || [];
-    const bloqueados = pacConfig.bloqueados || [];
-    const datas      = [...new Set([...slots, ...bloqueados].map(s => s.data))].sort();
-
-    corpo.innerHTML = '';
-    const grade  = document.createElement('div');
-    grade.className = 'pac-grade-wrap';
-    const gridEl = document.createElement('div');
-    gridEl.className = 'pac-grade';
-
-    datas.forEach(iso => {
-        const d   = new Date(iso + 'T00:00:00');
-        const col = document.createElement('div');
-        col.className = 'pac-col';
-
-        const hdr = document.createElement('div');
-        hdr.className = 'pac-col-header' + (iso === isoDate(new Date()) ? ' hoje' : '');
-        hdr.innerHTML = `${DIAS_ABR[d.getDay()]}<br>${d.getDate()}`;
-        col.appendChild(hdr);
-
-        const horasDia = [...new Set([
-            ...slots.filter(s => s.data === iso).map(s => s.hora),
-            ...bloqueados.filter(s => s.data === iso).map(s => s.hora)
-        ])].sort((a,b) => a-b);
-
-        horasDia.forEach(h => {
-            const isBloq = bloqueados.some(s => s.data === iso && s.hora === h);
-            const btn    = document.createElement('button');
-            btn.className = 'pac-slot ' + (isBloq ? 'bloqueado' : 'disponivel');
-            btn.textContent = horaLabel(h);
-            btn.disabled = isBloq;
-            if (!isBloq) {
-                btn.onclick = () => {
-                    document.querySelectorAll('.pac-slot.selecionado').forEach(b => b.classList.remove('selecionado'));
-                    btn.classList.add('selecionado');
-                    pacSlot = { data: iso, hora: h };
-                    renderizarPacConfirmacao();
-                };
-            }
-            col.appendChild(btn);
-        });
-        gridEl.appendChild(col);
-    });
-
-    grade.appendChild(gridEl);
-    corpo.appendChild(grade);
-}
-
-function renderizarPacConfirmacao() {
-    const corpo = $('pac-corpo');
-    if (!corpo) return;
-    const d    = new Date(pacSlot.data + 'T00:00:00');
-    const data = `${DIAS_PT[d.getDay()]}, ${d.getDate()} de ${MESES_ABR[d.getMonth()]}`;
-    corpo.innerHTML = `
-        <div class="pac-confirmacao">
-            <i class="fa-solid fa-calendar-check" style="font-size:2.5rem;color:var(--accent2);display:block;margin-bottom:1rem;"></i>
-            <h3>Confirmar consulta?</h3>
-            <p>Você está confirmando:</p>
-            <div class="pac-confirm-slot">📅 ${data} às ${horaLabel(pacSlot.hora)}</div>
-            <div class="pac-btns">
-                <button class="btn-sec" onclick="renderizarPacGrade()">Voltar</button>
-                <button class="btn-pri" onclick="confirmarConsulta()">
-                    <i class="fa-solid fa-check"></i> Confirmar
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-async function confirmarConsulta() {
-    if (!pacToken || !pacSlot) { renderizarPacErro('Nenhum horário selecionado.'); return; }
-
-    await carregarAgendamentos_ls();
-
-    const jaOcupado = S.agendamentos.some(
-        a => a.data === pacSlot.data && parseInt(a.hora) === parseInt(pacSlot.hora)
-    );
-    if (jaOcupado) {
-        renderizarPacErro('Este horário acabou de ser reservado por outra pessoa. Por favor, escolha outro.');
-        return;
-    }
-
-    const novo = {
-        id:            'ag_' + Date.now(),
-        paciente_id:   pacConfig.pacienteId,
-        nome_paciente: pacConfig.nomePaciente,
-        nomePaciente:  pacConfig.nomePaciente,
-        paciente:      pacConfig.nomePaciente,
-        data:          pacSlot.data,
-        hora:          pacSlot.hora,
-        obs:           pacConfig.obs || '',
-        status:        'confirmado'
-    };
-
-    S.agendamentos.push(novo);
-    salvarAgendamentos_ls();
-
-    // Marca token como usado
-    const tokens = carregarTokens_ls();
-    if (tokens[pacToken]) {
-        tokens[pacToken].usado    = true;
-        tokens[pacToken].usadoEm  = new Date().toISOString();
-        tokens[pacToken].slotEscolhido = pacSlot;
-        salvarTokens_ls(tokens);
-    }
-
-    await salvarAlteracoesNoDrive();
-
-    const corpo = $('pac-corpo');
-    if (corpo) corpo.innerHTML = `
-        <div class="pac-sucesso" style="text-align:center;padding:2rem 1rem;">
-            <i class="fa-solid fa-circle-check" style="font-size:3.5rem;color:var(--success);display:block;margin-bottom:1rem;"></i>
-            <h2>Consulta Confirmada!</h2>
-            <p style="color:var(--text2);font-size:0.95rem;margin-bottom:1.5rem;">Seu horário foi reservado com sucesso.</p>
-            <div style="background:var(--bg2);padding:1rem;border-radius:8px;text-align:left;border:1px solid var(--border);">
-                <div><strong>Nome:</strong> ${pacConfig.nomePaciente}</div>
-                <div><strong>Data:</strong> ${pacSlot.data.split('-').reverse().join('/')}</div>
-                <div><strong>Horário:</strong> ${horaLabel(pacSlot.hora)}</div>
-            </div>
-        </div>
-    `;
-}
-
-function renderizarPacErro(msg) {
-    const corpo = $('pac-corpo');
-    if (corpo) corpo.innerHTML = `
-        <div class="pac-erro">
-            <i class="fa-solid fa-circle-exclamation" style="font-size:2.5rem;color:var(--danger);display:block;margin-bottom:1rem;"></i>
-            <h2>Ops!</h2>
-            <p>${msg || 'Ocorreu um erro. Tente novamente ou entre em contato com a clínica.'}</p>
-        </div>
-    `;
-}
-
-// ══════════════════════════════════════════════════════
-// PWA — instalar ícone
-// ══════════════════════════════════════════════════════
-
-let _pwaPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    _pwaPrompt = e;
-});
-
-function _detectarAmbiente() {
-    const ua = navigator.userAgent;
-    const isIOS     = /iPhone|iPad|iPod/i.test(ua);
-    const isSafari  = isIOS && /Safari/i.test(ua) && !/CriOS|FxiOS/i.test(ua);
-    const isAndroid = /Android/i.test(ua);
-    const isChrome  = /Chrome/i.test(ua) && !/Edg|OPR/i.test(ua);
-    const isEdge    = /Edg/i.test(ua);
-    const isMobile  = isIOS || isAndroid;
-    const jaInstalado = window.matchMedia('(display-mode: standalone)').matches
-                     || window.navigator.standalone === true;
-    return { isIOS, isSafari, isAndroid, isChrome, isEdge, isMobile, jaInstalado };
-}
-
-function verificarInstalacaoPWA() {
-    const { jaInstalado } = _detectarAmbiente();
-    if (jaInstalado) return;
-    const jaRespondeu = lsGet('pwa_respondeu', false);
-    if (jaRespondeu) return;
-    setTimeout(() => mostrarBannerInstalar(), 2000);
-}
-
-function mostrarBannerInstalar() {
-    if (document.getElementById('pwa-install-overlay')) return;
-    const { isSafari, isIOS, isMobile } = _detectarAmbiente();
-    let instrucao = '';
-    if (isSafari && isIOS) {
-        instrucao = `
-            <div class="pwa-instrucao-ios">
-                <p>No Safari, toque em <strong><i class="fa-solid fa-arrow-up-from-bracket"></i> Compartilhar</strong> na barra inferior e depois em <strong>"Adicionar à Tela de Início"</strong>.</p>
-            </div>`;
-    }
-    const overlay = document.createElement('div');
-    overlay.id = 'pwa-install-overlay';
-    overlay.className = 'pwa-install-overlay';
-    overlay.innerHTML = `
-        <div class="pwa-install-card">
-            <div class="pwa-icon"><i class="fa-solid fa-stethoscope"></i></div>
-            <h3>Instalar Agenda Clínica</h3>
-            <p>Deseja adicionar um ícone na ${isMobile ? 'tela inicial do celular' : 'área de trabalho do computador'} para abrir o app com um clique?</p>
-            ${instrucao}
-            <div class="pwa-install-btns">
-                <button class="btn-pri" onclick="confirmarInstalarPWA()">
-                    <i class="fa-solid fa-download"></i> Sim, instalar
-                </button>
-                <button class="btn-sec" onclick="recusarInstalarPWA()">Agora não</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-}
-
-async function confirmarInstalarPWA() {
-    const overlay = document.getElementById('pwa-install-overlay');
-    if (overlay) overlay.remove();
-    lsSet('pwa_respondeu', true);
-    const { isSafari, isIOS } = _detectarAmbiente();
-
-    if (_pwaPrompt) {
-        _pwaPrompt.prompt();
-        const { outcome } = await _pwaPrompt.userChoice;
-        toast(outcome === 'accepted' ? '✓ Ícone criado com sucesso!' : 'Instalação cancelada.');
-        _pwaPrompt = null;
-    } else if (isSafari && isIOS) {
-        const card = document.createElement('div');
-        card.id = 'pwa-ios-instrucao';
-        card.className = 'pwa-install-overlay';
-        card.innerHTML = `
-            <div class="pwa-install-card">
-                <div class="pwa-icon" style="background:linear-gradient(135deg,#007aff,#0055cc);">
-                    <i class="fa-brands fa-safari"></i>
-                </div>
-                <h3>Como instalar no iPhone/iPad</h3>
-                <ol class="pwa-steps">
-                    <li>Toque no botão <strong><i class="fa-solid fa-arrow-up-from-bracket"></i></strong> na barra inferior do Safari</li>
-                    <li>Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong></li>
-                    <li>Toque em <strong>"Adicionar"</strong> no canto superior direito</li>
-                </ol>
-                <div class="pwa-install-btns">
-                    <button class="btn-pri" onclick="document.getElementById('pwa-ios-instrucao').remove()">
-                        <i class="fa-solid fa-check"></i> Entendido
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(card);
-    } else {
-        const card = document.createElement('div');
-        card.id = 'pwa-outros-instrucao';
-        card.className = 'pwa-install-overlay';
-        card.innerHTML = `
-            <div class="pwa-install-card">
-                <div class="pwa-icon"><i class="fa-solid fa-globe"></i></div>
-                <h3>Como instalar</h3>
-                <ol class="pwa-steps">
-                    <li>Clique nos <strong>três pontos ⋮</strong> no canto superior direito do navegador</li>
-                    <li>Procure por <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong></li>
-                    <li>Confirme a instalação</li>
-                </ol>
-                <div class="pwa-install-btns">
-                    <button class="btn-pri" onclick="document.getElementById('pwa-outros-instrucao').remove()">
-                        <i class="fa-solid fa-check"></i> Entendido
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(card);
-    }
-}
-
-function recusarInstalarPWA() {
-    const overlay = document.getElementById('pwa-install-overlay');
-    if (overlay) overlay.remove();
-    lsSet('pwa_respondeu', true);
+/* Evita zoom indesejado nos inputs no iOS */
+.field-group input,
+.field-group select,
+.login-group input {
+  font-size: 16px !important;
+}
+
+/* Grade da agenda: colunas menores em telas pequenas */
+@media (max-width: 480px) {
+  .grade-agenda {
+    grid-template-columns: 32px repeat(7, 1fr);
+    min-width: 320px;
+  }
+
+  .ga-hora-label  { font-size: .52rem; padding-right: .2rem; height: 38px; }
+  .ga-celula      { height: 38px; }
+  .ga-dia-nome    { font-size: .55rem; }
+  .ga-dia-num     { font-size: .8rem; }
+  .ga-chip        { font-size: .55rem; }
+
+  /* Header compacto */
+  .app-header     { padding: .55rem .75rem; }
+  .header-title   { font-size: .82rem; }
+  .btn-novo       { padding: .4rem .7rem; font-size: .75rem; }
+  .icon-btn       { width: 32px; height: 32px; font-size: .82rem; }
+
+  /* Lista do dia menor */
+  .dia-lista-wrap { max-height: 180px; }
+  .ag-item        { padding: .5rem .75rem; gap: .5rem; }
+  .ag-nome        { font-size: .8rem; }
+
+  /* Modais: sheet ocupa mais a tela */
+  .modal-sheet    { max-height: 92vh !important; border-radius: 20px 20px 0 0; }
+  .modal-overlay  { align-items: flex-end; padding: 0; }
+
+  /* Menu lateral */
+  .menu-nav button { padding: .75rem .85rem; font-size: .88rem; }
+
+  /* Config */
+  .config-wrap    { padding: .75rem; }
+
+  /* Login card */
+  .login-wrap     { padding: 1.25rem 1rem 1.5rem; padding-top: 2.5rem; }
+  .login-card     { padding: 1rem; }
+  .login-logo h1  { font-size: 1.35rem; }
+  .numpad button  { padding: .5rem; font-size: .88rem; }
+
+  /* FAB não tapa conteúdo */
+  .fab-fixos      { bottom: 1rem; right: .75rem; width: 44px; height: 44px; font-size: .9rem; }
+
+  /* Semana nav */
+  .semana-nav span { font-size: .75rem; }
+
+  /* Toast não sai da tela */
+  .toast { max-width: 90vw; white-space: normal; text-align: center; font-size: .8rem; padding: .55rem 1rem; }
+}
+
+/* Telas muito pequenas (≤ 360px) */
+@media (max-width: 360px) {
+  .grade-agenda {
+    grid-template-columns: 28px repeat(7, 1fr);
+    min-width: 280px;
+  }
+  .ga-hora-label { font-size: .48rem; height: 34px; }
+  .ga-celula     { height: 34px; }
+  .ga-dia-nome   { font-size: .5rem; }
+  .ga-dia-num    { font-size: .72rem; }
+}
+
+/* ── Modal PWA: pergunta de instalação ── */
+.pwa-install-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(61,37,53,0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 9998;
+  padding: 0;
+  animation: fadeInLb .25s ease-out;
+}
+
+.pwa-install-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--white);
+  border-radius: 24px 24px 0 0;
+  padding: 1.5rem 1.5rem 2rem;
+  box-shadow: 0 -8px 40px rgba(61,37,53,0.25);
+  border-top: 3px solid var(--rose-light);
+  animation: slideUpCard .35s cubic-bezier(.2,.8,.3,1) both;
+}
+
+.pwa-install-card .pwa-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: white;
+  margin: 0 auto .85rem;
+  box-shadow: 0 4px 14px var(--shadow-md);
+}
+
+.pwa-install-card h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text1);
+  text-align: center;
+  margin-bottom: .35rem;
+}
+
+.pwa-install-card p {
+  font-size: .82rem;
+  color: var(--text2);
+  text-align: center;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.pwa-install-btns {
+  display: flex;
+  gap: .75rem;
+  flex-direction: column;
+}
+
+.pwa-install-btns .btn-pri  { width: 100%; justify-content: center; }
+.pwa-install-btns .btn-sec  { width: 100%; text-align: center; }
+
+/* Steps de instrução (iOS / outros navegadores) */
+.pwa-steps {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  counter-reset: step;
+}
+
+.pwa-steps li {
+  counter-increment: step;
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  font-size: .84rem;
+  color: var(--text1);
+  line-height: 1.5;
+}
+
+.pwa-steps li::before {
+  content: counter(step);
+  min-width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: .1rem;
+}
+
+.pwa-instrucao-ios {
+  background: var(--rose-pale);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .75rem 1rem;
+  font-size: .82rem;
+  color: var(--text2);
+  margin-bottom: 1rem;
+  line-height: 1.5;
 }
-
-// ══════════════════════════════════════════════════════
-// INICIALIZAÇÃO
-// ══════════════════════════════════════════════════════
-
-document.addEventListener('DOMContentLoaded', async () => {
-    carregarConfig();
-
-    // Restaura token Google salvo (se ainda válido)
-    const savedToken = lsGet('agenda_google_token', null);
-    if (savedToken && tokenValido()) {
-        S.googleToken = savedToken;
-    }
-    const savedFileId = lsGet('agenda_drive_file_id', null);
-    if (savedFileId) S.fileIdDrive = savedFileId;
-
-    // Verifica se voltou do OAuth com token na URL
-    const hash = window.location.hash;
-    if (hash) {
-        const hashParams = new URLSearchParams(hash.replace('#', ''));
-        const oauthToken = hashParams.get('access_token');
-        if (oauthToken) {
-            S.googleToken = oauthToken;
-            lsSet('agenda_google_token', oauthToken);
-            lsSet('agenda_google_token_exp', Date.now() + 3500 * 1000);
-            history.replaceState(null, '', window.location.pathname);
-            console.log('[Drive] Token OAuth recebido.');
-            agendarRenovacaoToken();
-
-            const origem        = lsGet('agenda_oauth_origem', 'login');
-            const estavLogado   = lsGet('agenda_oauth_estava_logado', false);
-            lsSet('agenda_oauth_estava_logado', false);
 
-            // Vai para tela correta primeiro
-            if ((origem === 'agenda' || origem === 'config') && estavLogado) {
-                S.adminPin = lsGet('agenda_admin_pin_session', null) || '____';
-                irTela(origem === 'config' ? 'tela-config' : 'tela-agenda');
-                atualizarStatusDrive();
-                toast('🔄 Conectado! Baixando dados...');
-            } else {
-                irTela('tela-login');
-                verificarInstalacaoPWA();
-            }
-
-            // Baixa dados do Drive e renderiza
-            console.log('[Drive] Iniciando download após OAuth...');
-            const baixou = await baixarBackupDrive(false);
-            console.log('[Drive] Download concluído:', baixou);
-            await carregarPacientes_ls();
-            await carregarAgendamentos_ls();
-            console.log('[Drive] Pacientes carregados:', S.pacientes.length);
-            console.log('[Drive] Agendamentos carregados:', S.agendamentos.length);
-
-            if ((origem === 'agenda' || origem === 'config') && estavLogado) {
-                await renderizarAgenda();
-                iniciarPollingDrive();
-                toast('✅ Google Drive conectado! ' + S.pacientes.length + ' pacientes carregados.');
-            } else {
-                iniciarPollingDrive();
-            }
-            return;
-        }
-    }
-
-    const params = new URLSearchParams(location.search);
-    if (params.get('t')) {
-        await iniciarTelaPaciente();
-    } else {
-        // Se já tem token válido, carrega dados locais imediatamente
-        // e depois sincroniza com o Drive em background
-        if (tokenValido()) {
-            agendarRenovacaoToken();
-            // Carrega do localStorage antes de mostrar o PIN
-            // para garantir que S.pacientes já está populado quando o usuário entrar
-            await carregarPacientes_ls();
-            await carregarAgendamentos_ls();
-            // Sincroniza com Drive em background (não bloqueia a tela de PIN)
-            baixarBackupDrive(true).then(async () => {
-                // ✅ CORREÇÃO: após download, força atualização completa na memória
-                await carregarPacientes_ls();
-                await carregarAgendamentos_ls();
-                // Re-renderiza agenda se estiver aberta
-                const telaAgenda = document.getElementById('tela-agenda');
-                if (telaAgenda && telaAgenda.style.display !== 'none') {
-                    renderizarAgenda();
-                }
-            }).catch(() => {});
-            iniciarPollingDrive();
-        }
-        irTela('tela-login');
-        verificarInstalacaoPWA();
-    }
-});
-
-// ══════════════════════════════════════════════════════════════
-// PUSH AGENDAMENTO → GITHUB
-// O sistema local (Electron) lê esses arquivos e importa para o SQLite
-// ══════════════════════════════════════════════════════════════
-async function _pushAgendamentoGithub(agendamento, token) {
-    try {
-        // Lê o PAT do token que foi usado para gerar o link
-        // O token do GitHub fica em tokens/TOKEN.json → campo githubPAT
-        // Para não expor o PAT no JSON público, usamos um endpoint diferente:
-        // gravamos em agendamentos-pendentes/ag_xxx.json sem autenticação
-        // via um GitHub Action — mas a forma mais simples é o PAT já estar
-        // no arquivo do token (campo privado não exposto na UI pública)
-
-        // Busca o PAT salvo junto ao token no GitHub
-        const tokenUrl = `https://raw.githubusercontent.com/marciosublim-code/agenda-clinica/main/tokens/${token}.json?nocache=${Date.now()}`;
-        const tokenResp = await fetch(tokenUrl);
-        if (!tokenResp.ok) return;
-        const tokenDados = await tokenResp.json();
-        const pat = tokenDados._pat;
-        if (!pat) return; // PAT não estava no token, silencia
-
-        const conteudo = JSON.stringify(agendamento, null, 2);
-        const conteudoB64 = btoa(unescape(encodeURIComponent(conteudo)));
-
-        // Verifica SHA existente
-        let sha = null;
-        const checkResp = await fetch(
-            `https://api.github.com/repos/marciosublim-code/agenda-clinica/contents/agendamentos-pendentes/${agendamento.id}.json`,
-            { headers: { 'Authorization': `token ${pat}`, 'User-Agent': 'AgendaClinica' } }
-        );
-        if (checkResp.ok) {
-            const checkData = await checkResp.json();
-            sha = checkData.sha || null;
-        }
-
-        await fetch(
-            `https://api.github.com/repos/marciosublim-code/agenda-clinica/contents/agendamentos-pendentes/${agendamento.id}.json`,
-            {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${pat}`,
-                    'User-Agent':    'AgendaClinica',
-                    'Content-Type':  'application/json'
-                },
-                body: JSON.stringify({
-                    message: `agendamento ${agendamento.id}`,
-                    content: conteudoB64,
-                    ...(sha ? { sha } : {})
-                })
-            }
-        );
-    } catch(e) {
-        console.warn('[GitHub] Erro ao publicar agendamento:', e);
-    }
-}
