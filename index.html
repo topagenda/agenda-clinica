@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script>
+// ── Limpeza forçada de cache e Service Workers ──────────────
+// IMPORTANTE: usa document.write para bloquear o parser do HTML
+// enquanto a limpeza assíncrona termina — assim o app.js novo
+// é sempre buscado da rede, nunca do cache antigo.
+(async function limparTudo() {
+    if ('serviceWorker' in navigator) {
+        const registros = await navigator.serviceWorker.getRegistrations();
+        for (const r of registros) await r.unregister();
+    }
+    if ('caches' in window) {
+        const nomes = await caches.keys();
+        for (const n of nomes) await caches.delete(n);
+    }
+    console.log('[Cache] Limpeza completa realizada.');
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#c4506d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Agenda — Clínica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="app.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+
+.ga-celula.livre {
+  cursor: pointer;
+}
+.ga-celula.livre:active {
+  background: rgba(var(--accent-rgb, 196,80,109), 0.08);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: LOGIN ADMIN
+════════════════════════════════════════════════ -->
+<div id="tela-login" class="tela">
+
+  <!-- Slideshow tela cheia -->
+  <div class="login-bg" id="login-bg" onclick="mostrarCardLogin()"></div>
+  <div class="login-bg-overlay" id="login-overlay" onclick="mostrarCardLogin()"></div>
+
+  <!-- Texto flutuante sobre imagem -->
+  <div class="login-splash" id="login-splash" onclick="mostrarCardLogin()">
+    <div class="splash-logo">
+      <i class="fa-solid fa-stethoscope"></i>
+    </div>
+    <h1 class="splash-titulo">Agenda Clínica</h1>
+    <p class="splash-sub">Toque para acessar</p>
+    <div class="splash-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Card de login (escondido inicialmente) -->
+  <div class="login-wrap" id="login-card-wrap" style="display:none;">
+    <div class="login-logo">
+      <div class="logo-icon"><i class="fa-solid fa-stethoscope"></i></div>
+      <h1>Agenda Clínica</h1>
+      <p>Acesso do médico</p>
+    </div>
+    <div class="login-card">
+      <label class="field-label">PIN de acesso</label>
+      <div class="pin-row" id="pin-display" onclick="document.getElementById('pin-input-hidden').focus()">
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="numpad">
+        <button onclick="pinDigit(1)">1</button>
+        <button onclick="pinDigit(2)">2</button>
+        <button onclick="pinDigit(3)">3</button>
+        <button onclick="pinDigit(4)">4</button>
+        <button onclick="pinDigit(5)">5</button>
+        <button onclick="pinDigit(6)">6</button>
+        <button onclick="pinDigit(7)">7</button>
+        <button onclick="pinDigit(8)">8</button>
+        <button onclick="pinDigit(9)">9</button>
+        <button onclick="pinClear()" class="btn-clear"><i class="fa-solid fa-delete-left"></i></button>
+        <button onclick="pinDigit(0)">0</button>
+        <button onclick="pinEnter()" class="btn-ok"><i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+      <p id="login-erro" class="login-erro" style="display:none;">PIN incorreto. Tente novamente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: AGENDA (ADMIN)
+════════════════════════════════════════════════ -->
+<div id="tela-agenda" class="tela" style="display:none;">
+
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn" onclick="irTela('tela-menu')"><i class="fa-solid fa-bars"></i></button>
+      <div class="header-title">
+        <span id="header-semana-label">Carregando...</span>
+      </div>
+    </div>
+    <div class="header-url" id="header-url" onclick="copiarUrlAgenda()" title="Toque para copiar o endereço de acesso">
+      <i class="fa-solid fa-mobile-screen-button"></i>
+      <span id="header-url-texto">carregando…</span>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" onclick="irHoje()"><i class="fa-solid fa-calendar-day"></i></button>
+      <button class="icon-btn" id="btn-drive-agenda" onclick="conectarDriveAgenda()" title="Google Drive">
+        <i class="fa-brands fa-google-drive"></i>
+      </button>
+      <button class="icon-btn" id="btn-alternar-tema-agenda" onclick="alternarTemaAgenda()" title="Alternar tema">
+        <i class="fa-solid fa-palette"></i>
+      </button>
+      <button class="icon-btn" onclick="abrirModalImprimir()" title="Imprimir agenda">
+        <i class="fa-solid fa-print"></i>
+      </button>
+      <button class="btn-novo" onclick="abrirModalGerarLink()">
+        <i class="fa-solid fa-link"></i> Link
+      </button>
+    </div>
+  </header>
+
+  <div class="semana-nav">
+    <button onclick="semanaAnterior()"><i class="fa-solid fa-chevron-left"></i></button>
+    <span id="semana-nav-label"></span>
+    <button onclick="semanaProxima()"><i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+
+  <!-- Grade semanal -->
+  <div class="agenda-wrap">
+    <div id="grade-agenda" class="grade-agenda"></div>
+  </div>
+
+  <!-- Lista do dia selecionado -->
+  <div class="dia-lista-wrap">
+    <div id="dia-lista-header" class="dia-lista-header"></div>
+    <div id="dia-lista" class="dia-lista"></div>
+  </div>
+
+  <!-- FAB: gerar links fixos -->
+  <button class="fab-fixos" onclick="abrirModalFixos()" title="Enviar horários fixos da semana">
+    <i class="fa-solid fa-rotate"></i>
+  </button>
+
+  <!-- FAB: comando de voz -->
+  <button class="fab-fixos fab-voz" id="fab-voz" onclick="iniciarComandoVozAgenda()" title="Agendar por voz">
+    <i class="fa-solid fa-microphone"></i>
+  </button>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: PACIENTES
+════════════════════════════════════════════════ -->
+<div id="tela-pacientes" class="tela" style="display:none;">
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn" onclick="irTela('tela-menu')"><i class="fa-solid fa-arrow-left"></i></button>
+      <div class="header-title"><span>Pacientes</span></div>
+    </div>
+    <div class="header-right">
+      <button class="btn-novo" onclick="abrirModalPaciente()">
+        <i class="fa-solid fa-plus"></i> Novo
+      </button>
+    </div>
+  </header>
+  <div class="lista-pac-wrap">
+    <div class="busca-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="busca-pac" placeholder="Buscar por nome ou código..." oninput="filtrarPacientes()">
+    </div>
+    <div id="lista-pacientes"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: MENU
+════════════════════════════════════════════════ -->
+<div id="tela-menu" class="tela tela-menu" style="display:none;">
+  <div class="menu-header">
+    <div class="logo-icon sm"><i class="fa-solid fa-stethoscope"></i></div>
+    <div>
+      <div id="menu-clinica-nome" class="menu-clinica">Clínica Saúde &amp; Vida</div>
+      <div class="menu-sub">Painel do Médico</div>
+    </div>
+    <button class="icon-btn" onclick="irTela('tela-agenda')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <nav class="menu-nav">
+    <button onclick="irTela('tela-agenda')"><i class="fa-solid fa-calendar-week"></i> Agenda Semanal</button>
+    <button onclick="abrirTelaPacientes()"><i class="fa-solid fa-users"></i> Pacientes</button>
+    <button onclick="irTela('tela-config')"><i class="fa-solid fa-gear"></i> Configurações</button>
+    <button onclick="alternarTemaAgenda()" style="display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-palette"></i> Alternar Tema
+    </button>
+    <button onclick="logout()" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: CONFIGURAÇÕES
+════════════════════════════════════════════════ -->
+<div id="tela-config" class="tela" style="display:none;">
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn" onclick="irTela('tela-menu')"><i class="fa-solid fa-arrow-left"></i></button>
+      <div class="header-title"><span>Configurações</span></div>
+    </div>
+  </header>
+  <div class="config-wrap">
+    <div class="config-section">
+      <h3>Clínica</h3>
+      <div class="field-group">
+        <label>Nome da clínica</label>
+        <input type="text" id="cfg-nome-clinica" placeholder="Clínica Saúde &amp; Vida">
+      </div>
+      <div class="field-group">
+        <label>Seu WhatsApp (com DDI, ex: 5551999999999)</label>
+        <input type="tel" id="cfg-tel" placeholder="5551999999999">
+      </div>
+      <div class="field-group">
+        <label>E-mail do responsável <span style="font-size:.72rem;color:#e879a0;font-weight:600;">★ Usado no backup e licença</span></label>
+        <input type="email" id="cfg-email" placeholder="seuemail@exemplo.com" autocomplete="email">
+        <p style="font-size:.72rem;color:var(--text2);margin-top:.3rem;line-height:1.4;">
+          <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i>
+          Este e-mail é usado para verificar sua licença e enviar backups automáticos.
+        </p>
+      </div>
+    </div>
+    <div class="config-section">
+      <h3>Segurança</h3>
+      <div class="field-group">
+        <label>Novo PIN (4 dígitos)</label>
+        <input type="number" id="cfg-pin" placeholder="••••" maxlength="4">
+      </div>
+    </div>
+    <div class="config-section">
+      <h3><i class="fa-brands fa-google-drive" style="color:#34a853"></i> Google Drive</h3>
+      <p style="font-size:.8rem;color:var(--text2);margin-bottom:.75rem;line-height:1.4;">
+        Seus dados ficam salvos no Google Drive e sincronizados automaticamente. Conecte para ativar o backup na nuvem.
+      </p>
+      <div id="status-drive-wrap">
+        <button class="btn-salvar-cfg" id="btn-drive-config" onclick="conectarOuDesconectarDrive()" style="background:#e8f5e9;color:#2e7d32;border:1.5px solid #a5d6a7;">
+          <i class="fa-brands fa-google"></i> <span id="btn-drive-texto">Conectar com Google Drive</span>
+        </button>
+        <p id="status-drive" style="font-size:.78rem;margin-top:.5rem;color:var(--text2);text-align:center;"></p>
+      </div>
+    </div>
+    <button class="btn-salvar-cfg" onclick="salvarConfig()">
+      <i class="fa-solid fa-check"></i> Salvar configurações
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TELA: PACIENTE (link público)
+════════════════════════════════════════════════ -->
+<div id="tela-paciente" class="tela" style="display:none;">
+  <div class="pac-outer">
+    <div class="pac-card">
+      <div class="pac-header">
+        <div class="pac-logo"><i class="fa-solid fa-hand-holding-heart"></i></div>
+        <h1 id="pac-titulo">Agendamento</h1>
+        <p id="pac-subtitulo">Escolha seu horário</p>
+      </div>
+      <div id="pac-corpo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODAIS
+════════════════════════════════════════════════ -->
+
+<!-- Modal: Gerar Link -->
+<div id="modal-link" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-link"></i> Gerar Link</h3>
+      <button onclick="fecharModal('modal-link')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Paciente</label>
+        <select id="ml-paciente" onchange="onModalPacienteChange()">
+          <option value="">— Selecione —</option>
+        </select>
+      </div>
+      <div id="ml-pac-info" class="pac-mini-info" style="display:none;"></div>
+      <div class="field-group">
+        <label>Semana</label>
+        <select id="ml-semana" onchange="renderizarGradeModal()"></select>
+      </div>
+      <div class="field-group">
+        <label>Horários <span class="label-hint">Toque para marcar</span></label>
+        <div id="ml-grade" class="modal-grade-wrap"></div>
+      </div>
+      <div class="field-group">
+        <label>Observação (opcional)</label>
+        <input type="text" id="ml-obs" placeholder="Ex: Retorno, primeira consulta...">
+      </div>
+      <div id="ml-link-resultado" style="display:none;" class="link-resultado-box">
+        <label>Link gerado — toque para copiar e enviar:</label>
+        <div class="link-copy-row">
+          <input type="text" id="ml-link-valor" readonly onclick="copiarLink()">
+          <button onclick="copiarLink()"><i class="fa-solid fa-copy"></i></button>
+        </div>
+        <button class="btn-whatsapp" onclick="enviarWhatsapp()">
+          <i class="fa-brands fa-whatsapp"></i> Enviar pelo WhatsApp
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-link')">Cancelar</button>
+      <button class="btn-pri" onclick="gerarLink()"><i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Adicionar manual -->
+<div id="modal-add" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet" style="max-height:75vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-plus"></i> Novo Agendamento</h3>
+      <button onclick="fecharModal('modal-add')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-add-horario" class="horario-badge"></p>
+      <div class="field-group">
+        <label>Horário</label>
+        <div class="toggle-horario-grupo">
+          <button type="button" class="toggle-horario-btn" id="add-hora-cheia-btn" onclick="selecionarSubHorarioAdd(0)"></button>
+          <button type="button" class="toggle-horario-btn" id="add-hora-meia-btn" onclick="selecionarSubHorarioAdd(0.5)"></button>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Paciente</label>
+        <div class="pac-sel-com-voz">
+          <select id="add-pac-sel"></select>
+          <button type="button" class="btn-mic-inline" id="btn-mic-add" onclick="iniciarComandoVozNomeModal()" title="Dizer nome do paciente">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Observação (opcional)</label>
+        <input type="text" id="add-obs" placeholder="Ex: Retorno...">
+      </div>
+
+      <!-- ── Recorrência ── -->
+      <div class="field-group">
+        <label><i class="fa-solid fa-rotate" style="color:#c4506d;margin-right:4px;"></i> Repetir sessão</label>
+        <select id="add-recorrencia" onchange="toggleRecorrenciaOpcoes()">
+          <option value="nao">Não repetir (apenas esta)</option>
+          <option value="semanal">Semanalmente (mesma hora)</option>
+          <option value="quinzenal">Quinzenalmente</option>
+          <option value="mensal">Mensalmente</option>
+        </select>
+      </div>
+
+      <div id="recorrencia-opcoes" style="display:none;">
+        <div class="field-group">
+          <label>Número de sessões (incluindo esta)</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="add-recorr-qtd" min="2" max="52" value="8"
+              oninput="document.getElementById('recorr-qtd-label').textContent = this.value"
+              style="flex:1;accent-color:#c4506d;">
+            <span id="recorr-qtd-label" style="font-weight:700;color:#c4506d;min-width:28px;text-align:center;">8</span>
+          </div>
+        </div>
+        <div id="recorr-preview" style="
+          font-size:.75rem;color:#888;
+          background:#fdf4f7;border:1px solid #f3c6d8;
+          border-radius:8px;padding:8px 10px;margin-top:4px;
+          line-height:1.6;">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-add')">Cancelar</button>
+      <button class="btn-pri" onclick="salvarAgendamentoManual()"><i class="fa-solid fa-check"></i> Agendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalhe agendamento -->
+<div id="modal-detalhe" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet" style="max-height:70vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-calendar-check"></i> Consulta</h3>
+      <button onclick="fecharModal('modal-detalhe')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="modal-detalhe-corpo" class="modal-body"></div>
+    <div class="modal-footer" style="flex-direction:column;gap:.5rem;">
+      <button class="btn-pri" style="width:100%;background:#6366f1;border-color:#6366f1;" onclick="abrirModalSubstituir()">
+        <i class="fa-solid fa-user-pen"></i> Substituir Paciente
+      </button>
+      <button class="btn-danger" style="width:100%;" onclick="cancelarAgendamento()">
+        <i class="fa-solid fa-calendar-xmark"></i> Cancelar — deixar vago
+      </button>
+      <button class="btn-ghost" id="btn-prontuario" onclick="irProntuario()" style="display:none;">
+        <i class="fa-solid fa-folder-open"></i> Prontuário
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal: Substituir paciente -->
+<div id="modal-substituir" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet" style="max-height:75vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-user-pen"></i> Substituir Paciente</h3>
+      <button onclick="fecharModal('modal-substituir')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="modal-sub-info" class="horario-badge"></p>
+      <div class="field-group">
+        <label>Novo paciente</label>
+        <select id="sub-pac-sel"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-substituir')">Voltar</button>
+      <button class="btn-pri" onclick="confirmarSubstituicao()"><i class="fa-solid fa-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Paciente form -->
+<div id="modal-pac" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3 id="modal-pac-titulo"><i class="fa-solid fa-user-plus"></i> Novo Paciente</h3>
+      <button onclick="fecharModal('modal-pac')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pac-edit-id">
+      <div class="field-group">
+        <label>Nome completo</label>
+        <input type="text" id="pac-nome" placeholder="Nome do paciente">
+      </div>
+      <div class="field-group">
+        <label>WhatsApp (com DDI)</label>
+        <input type="tel" id="pac-tel" placeholder="5551999999999">
+      </div>
+      <div class="field-group">
+        <label>E-mail (opcional)</label>
+        <input type="email" id="pac-email" placeholder="email@exemplo.com">
+      </div>
+      <div class="field-group">
+        <label>Horário fixo semanal?</label>
+        <div class="toggle-row">
+          <input type="checkbox" id="pac-fixo-check" onchange="toggleHorarioFixo()">
+          <label for="pac-fixo-check">Sim, tem horário fixo</label>
+        </div>
+      </div>
+      <div id="fixo-opcoes" style="display:none;" class="fixo-grid">
+        <div class="field-group">
+          <label>Dia da semana</label>
+          <select id="pac-fixo-dia">
+            <option value="0">Domingo</option>
+            <option value="1">Segunda-feira</option>
+            <option value="2">Terça-feira</option>
+            <option value="3">Quarta-feira</option>
+            <option value="4">Quinta-feira</option>
+            <option value="5">Sexta-feira</option>
+            <option value="6">Sábado</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Horário</label>
+          <select id="pac-fixo-hora">
+            <option value="7">07:00</option><option value="7.5">07:30</option>
+            <option value="8">08:00</option><option value="8.5">08:30</option>
+            <option value="9">09:00</option><option value="9.5">09:30</option>
+            <option value="10">10:00</option><option value="10.5">10:30</option>
+            <option value="11">11:00</option><option value="11.5">11:30</option>
+            <option value="12">12:00</option><option value="12.5">12:30</option>
+            <option value="13">13:00</option><option value="13.5">13:30</option>
+            <option value="14">14:00</option><option value="14.5">14:30</option>
+            <option value="15">15:00</option><option value="15.5">15:30</option>
+            <option value="16">16:00</option><option value="16.5">16:30</option>
+            <option value="17">17:00</option><option value="17.5">17:30</option>
+            <option value="18">18:00</option><option value="18.5">18:30</option>
+            <option value="19">19:00</option><option value="19.5">19:30</option>
+            <option value="20">20:00</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-pac')">Cancelar</button>
+      <button class="btn-pri" onclick="salvarPaciente()"><i class="fa-solid fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Links fixos -->
+<div id="modal-fixos" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-rotate"></i> Horários Fixos da Semana</h3>
+      <button onclick="fecharModal('modal-fixos')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="modal-fixos-corpo" class="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-fixos')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Imprimir Agenda -->
+<div id="modal-imprimir" class="modal-overlay" style="display:none;">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <h3><i class="fa-solid fa-print"></i> Imprimir Agenda</h3>
+      <button onclick="fecharModal('modal-imprimir')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Período</label>
+        <div class="toggle-horario-grupo" id="imp-periodo-grupo">
+          <button type="button" class="toggle-horario-btn" data-periodo="dia" onclick="selecionarPeriodoImprimir('dia')">Dia</button>
+          <button type="button" class="toggle-horario-btn" data-periodo="semana" onclick="selecionarPeriodoImprimir('semana')">Semana</button>
+          <button type="button" class="toggle-horario-btn" data-periodo="mes" onclick="selecionarPeriodoImprimir('mes')">Mês</button>
+        </div>
+      </div>
+      <div class="field-group" id="imp-campo-dia">
+        <label>Data</label>
+        <input type="date" id="imp-data">
+      </div>
+      <div class="field-group" id="imp-campo-mes" style="display:none;">
+        <label>Mês</label>
+        <input type="month" id="imp-mes">
+      </div>
+      <p id="imp-resumo" style="font-size:.8rem;color:var(--text2);margin-top:.25rem;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-imprimir')">Cancelar</button>
+      <button class="btn-pri" onclick="gerarImpressaoAgenda()"><i class="fa-solid fa-print"></i> Imprimir / PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Área usada apenas na impressão (invisível na tela) -->
+<div id="area-impressao" class="area-impressao"></div>
+
+<!-- Toast -->
+
+<!-- Modal: Primeiro Acesso / Configuração de E-mail -->
+<div id="modal-boas-vindas" class="modal-overlay" style="display:none; z-index:10000;">
+  <div class="modal-sheet" style="max-width:420px; border-radius:20px 20px 0 0; padding-bottom:env(safe-area-inset-bottom,16px);">
+    <div style="text-align:center; padding:1.5rem 1.5rem 0.5rem;">
+      <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#e879a0,#c2185b);display:inline-flex;align-items:center;justify-content:center;color:white;font-size:1.8rem;margin-bottom:1rem;">
+        <i class="fa-solid fa-shield-heart"></i>
+      </div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.35rem;margin:0 0 .4rem;">Bem-vindo ao Sistema!</h2>
+      <p style="font-size:.82rem;color:var(--text2);line-height:1.5;margin:0 0 .25rem;">
+        Para ativar sua licença e habilitar o <strong>backup automático</strong>, informe seu e-mail cadastrado.
+      </p>
+    </div>
+    <div class="modal-body" style="padding:1rem 1.5rem;">
+      <div class="field-group">
+        <label style="font-weight:600;">E-mail cadastrado na assinatura</label>
+        <div style="position:relative;">
+          <i class="fa-solid fa-envelope" style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:#e879a0;font-size:.85rem;pointer-events:none;"></i>
+          <input type="email" id="bv-email" placeholder="seuemail@exemplo.com" autocomplete="email" style="padding-left:2.4rem;" oninput="validarEmailBoasVindas()">
+        </div>
+        <p id="bv-email-erro" style="display:none;font-size:.72rem;color:#ef4444;margin-top:.3rem;">
+          <i class="fa-solid fa-circle-exclamation"></i> Digite um e-mail válido.
+        </p>
+      </div>
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:.75rem 1rem;font-size:.75rem;color:#15803d;line-height:1.5;margin-top:.5rem;">
+        <i class="fa-solid fa-circle-check"></i>
+        <strong>Este e-mail será usado para:</strong><br>
+        &bull; Verificar validade da sua licença<br>
+        &bull; Identificar seus backups automáticos<br>
+        &bull; Recuperar acesso em caso de reinstalação
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:0 1.5rem 1rem; flex-direction:column; gap:.6rem;">
+      <button class="btn-pri" id="bv-btn-confirmar" onclick="confirmarEmailBoasVindas()" style="width:100%;padding:.85rem;font-size:.9rem;">
+        <i class="fa-solid fa-rocket"></i> Ativar sistema
+      </button>
+      <button class="btn-ghost" onclick="adiarEmailBoasVindas()" style="width:100%;font-size:.78rem;color:var(--text2);">
+        Configurar depois
+      </button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" style="display:none;"></div>
+
+<script>
+// ── Imagens do Pequeno Príncipe ──────────────────────────────
+const PP_IMGS = Array.from({length:13}, (_,i) => `img/pp${String(i+1).padStart(2,'0')}.jpg`);
+
+// Embaralha array
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// ── SLIDESHOW TELA DE LOGIN ──────────────────────────────────
+(function iniciarSlideshow() {
+  const bg = document.getElementById('login-bg');
+  if (!bg) return;
+  const lista = shuffle(PP_IMGS);
+  let idx = 0;
+
+  // Mostra card de login ao clicar na tela
+  window.mostrarCardLogin = function() {
+    const splash  = document.getElementById('login-splash');
+    const card    = document.getElementById('login-card-wrap');
+    const overlay = document.getElementById('login-overlay');
+    const bg      = document.getElementById('login-bg');
+    if (splash)  { splash.classList.add('saindo'); setTimeout(() => { splash.style.display='none'; splash.style.pointerEvents='none'; }, 400); }
+    if (overlay) { overlay.style.pointerEvents = 'none'; overlay.removeAttribute('onclick'); }
+    if (bg)      { bg.style.pointerEvents = 'none'; bg.removeAttribute('onclick'); }
+    if (card)    { card.style.display='flex'; card.classList.add('entrando'); }
+    // Foca o input oculto para ativar teclado numérico no celular
+    setTimeout(() => {
+      const inp = document.getElementById('pin-input-hidden');
+      if (inp) inp.focus();
+    }, 400);
+  };
+
+  function trocar() {
+    const img = new Image();
+    img.onload = () => {
+      bg.style.backgroundImage = `url('${lista[idx]}')`;
+      idx = (idx + 1) % lista.length;
+    };
+    img.src = lista[idx];
+  }
+
+  trocar();
+  setInterval(trocar, 5000);
+})();
+
+// Handler para teclado físico/virtual do celular
+window.handlePinInput = function(val) {
+  const digits = val.replace(/\D/g, '').slice(0, 4);
+  S.pin = digits;
+  atualizarPinDisplay();
+  const inp = document.getElementById('pin-input-hidden');
+  if (inp) inp.value = digits;
+  if (digits.length === 4) setTimeout(pinEnter, 200);
+};
+
+// Suporte ao teclado físico do PC/notebook (números + teclado numérico)
+document.addEventListener('keydown', function(e) {
+  // Só funciona quando a tela de login está visível
+  const telaLogin = document.getElementById('tela-login');
+  if (!telaLogin || telaLogin.style.display === 'none') return;
+
+  // Mostra o card se ainda estiver na splash
+  const card = document.getElementById('login-card-wrap');
+  if (!card || card.style.display === 'none') {
+    mostrarCardLogin();
+  }
+
+  // Digits: linha de cima (0-9) e teclado numérico (Numpad0-9)
+  if ((e.key >= '0' && e.key <= '9') || (e.code && e.code.startsWith('Numpad') && e.key >= '0' && e.key <= '9')) {
+    if (typeof pinDigit === 'function') pinDigit(parseInt(e.key));
+  }
+  // Backspace ou Delete apaga último dígito
+  else if (e.key === 'Backspace' || e.key === 'Delete') {
+    if (typeof pinClear === 'function') pinClear();
+  }
+  // Enter confirma o PIN
+  else if (e.key === 'Enter' || e.key === 'NumpadEnter') {
+    if (typeof pinEnter === 'function') pinEnter();
+  }
+});
+
+// Exporta para uso no app.js (grade da agenda)
+window.PP_IMGS = PP_IMGS;
+window.shuffleImgs = shuffle;
+</script>
+<script src="app.js"></script>
+
+<!-- Banner instalação PWA -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:2px solid #f4aabb;padding:1rem 1.25rem;align-items:center;gap:1rem;z-index:9999;box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
+    <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#e879a0,#c2185b);display:flex;align-items:center;justify-content:center;color:white;font-size:1.3rem;flex-shrink:0;">
+        <i class="fa-solid fa-stethoscope"></i>
+    </div>
+    <div style="flex:1;">
+        <strong style="display:block;font-size:.9rem;">Instalar Agenda Clínica</strong>
+        <span style="font-size:.78rem;color:#64748b;">Adicionar à tela inicial para usar offline</span>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-shrink:0;">
+        <button onclick="instalarPWA()" style="padding:.55rem 1rem;background:linear-gradient(135deg,#e879a0,#c2185b);color:white;border:none;border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;">Instalar</button>
+        <button onclick="fecharBannerPWA()" style="padding:.55rem .75rem;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.78rem;cursor:pointer;">Agora não</button>
+    </div>
+</div>
+
+<script>
+// ── Registra Service Worker para uso offline ──────────────
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+            .catch(err => console.warn('[PWA] Service Worker falhou:', err));
+    });
+}
+
+// ── Banner de instalação PWA ──────────────────────────────
+let _deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    const recusou = localStorage.getItem('pwa_recusou');
+    if (!recusou) {
+        setTimeout(() => {
+            const banner = document.getElementById('pwa-banner');
+            if (banner) banner.style.display = 'flex';
+        }, 3000);
+    }
+});
+
+window.instalarPWA = async function() {
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'none';
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    _deferredPrompt = null;
+};
+
+window.fecharBannerPWA = function() {
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'none';
+    const expira = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    localStorage.setItem('pwa_recusou', expira);
+};
+
+// Limpa flag de recusa se expirou
+(function() {
+    const recusou = localStorage.getItem('pwa_recusou');
+    if (recusou && Date.now() > parseInt(recusou)) {
+        localStorage.removeItem('pwa_recusou');
+    }
+})();
+
+window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'none';
+    _deferredPrompt = null;
+});
+</script>
+</body>
+</html>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// MODAL BOAS-VINDAS — Coleta de e-mail no primeiro acesso
+// Só aparece no sistema local (Electron/localhost), nunca na PWA
+// ═══════════════════════════════════════════════════════════
+
+(function verificarPrimeiroAcesso() {
+    window.addEventListener('load', function() {
+        // ── Só mostra no sistema LOCAL, nunca na Agenda PWA ──
+        const isLocal = location.hostname === 'localhost' ||
+                        location.hostname === '127.0.0.1' ||
+                        location.protocol === 'file:';
+        if (!isLocal) return; // Agenda PWA (GitHub Pages) → não mostra
+
+        // Usuário pediu para não mostrar mais → nunca mostra
+        if (localStorage.getItem('bv_nunca_mostrar') === '1') return;
+
+        // Usuário adiou → respeita o prazo
+        const adiarAte = parseInt(localStorage.getItem('bv_adiar_ate') || '0');
+        if (adiarAte && Date.now() < adiarAte) return;
+
+        // Já tem e-mail configurado → não precisa
+        const cfg = JSON.parse(localStorage.getItem('agenda_config') || '{}');
+        if (cfg.email_responsavel) return;
+
+        setTimeout(function() {
+            const modal = document.getElementById('modal-boas-vindas');
+            if (modal) modal.style.display = 'flex';
+        }, 800);
+    });
+})();
+
+window.validarEmailBoasVindas = function() {
+    const input = document.getElementById('bv-email');
+    const erro  = document.getElementById('bv-email-erro');
+    const btn   = document.getElementById('bv-btn-confirmar');
+    const ok    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
+    if (erro) erro.style.display = ok || !input.value ? 'none' : 'block';
+    if (btn)  btn.disabled = !ok;
+};
+
+window.confirmarEmailBoasVindas = function() {
+    const input = document.getElementById('bv-email');
+    const email = input ? input.value.trim().toLowerCase() : '';
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        const erro = document.getElementById('bv-email-erro');
+        if (erro) erro.style.display = 'block';
+        return;
+    }
+
+    // Salva o e-mail na config da agenda
+    const cfg = JSON.parse(localStorage.getItem('agenda_config') || '{}');
+    cfg.email_responsavel = email;
+    localStorage.setItem('agenda_config', JSON.stringify(cfg));
+
+    // Salva também como usuário logado para o backup.js usar
+    const usuario = JSON.parse(sessionStorage.getItem('usuarioLogado') || '{}');
+    usuario.email = email;
+    sessionStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+
+    // Fecha o modal
+    const modal = document.getElementById('modal-boas-vindas');
+    if (modal) modal.style.display = 'none';
+
+    // Feedback visual
+    if (typeof mostrarToast === 'function') {
+        mostrarToast('✅ E-mail configurado! Licença sendo verificada...', 3500);
+    }
+
+    // Dispara verificação de licença imediatamente
+    if (typeof verificarStatusLicencaTela === 'function') {
+        verificarStatusLicencaTela();
+    }
+};
+
+window.adiarEmailBoasVindas = function() {
+    const modal = document.getElementById('modal-boas-vindas');
+    if (modal) modal.style.display = 'none';
+
+    // Pergunta se quer parar de ver essa mensagem
+    const parar = confirm('Deseja que essa mensagem não apareça mais?\n\nClique OK para nunca mais ver.\nClique Cancelar para lembrar amanhã.');
+    if (parar) {
+        localStorage.setItem('bv_nunca_mostrar', '1');
+        localStorage.removeItem('bv_adiar_ate');
+    } else {
+        const amanha = Date.now() + 24 * 60 * 60 * 1000;
+        localStorage.setItem('bv_adiar_ate', amanha);
+    }
+};
+
+// Preenche o campo de e-mail nas Configurações ao abrir a tela
+(function() {
+    const observer = new MutationObserver(function() {
+        const tela = document.getElementById('tela-config');
+        if (tela && tela.style.display !== 'none') {
+            const cfg = JSON.parse(localStorage.getItem('agenda_config') || '{}');
+            const cfgEmail = document.getElementById('cfg-email');
+            if (cfgEmail && cfg.email_responsavel && !cfgEmail.value) {
+                cfgEmail.value = cfg.email_responsavel;
+            }
+        }
+    });
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style'] });
+})();
+</script>
